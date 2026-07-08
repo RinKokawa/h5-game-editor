@@ -35,7 +35,6 @@ const RENDERER_DEV_URL = 'http://localhost:5173';
 // changes, update this constant too — Electron's chrome can't read
 // CSS variables.
 const EDITOR_BG = '#1e1e1e';
-const EDITOR_BG_ELEVATED = '#252526';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,16 +49,14 @@ const createWindow = (): BrowserWindow => {
     minHeight: 600,
     title: 'H5 Game Editor',
     backgroundColor: EDITOR_BG,
-    // Hide the OS chrome so the renderer's MenuBar is the only thing
-    // the user sees at the top. Drag handles (the editor's empty
-    // areas) still let the user move the window.
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
-    // Tint the small traffic-light / window-control strip so it
-    // doesn't look out of place against the editor's dark theme.
-    titleBarOverlay:
-      process.platform === 'darwin'
-        ? false
-        : { color: EDITOR_BG, symbolColor: EDITOR_BG_ELEVATED, height: 28 },
+    // On Windows 11, Mica gives the OS chrome a tinted backdrop that
+    // adopts the editor's dark theme instead of the default white.
+    // On macOS the title bar picks up the `backgroundColor` directly.
+    // On older Windows / Linux the title bar stays white; we accept
+    // the small mismatch in v0.1 — making it dark everywhere needs
+    // either a custom titleBarStyle (which conflicts with the React
+    // MenuBar approach) or a Windows 11-only `backgroundMaterial`.
+    ...(process.platform === 'win32' ? { backgroundMaterial: 'mica' as const } : {}),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
