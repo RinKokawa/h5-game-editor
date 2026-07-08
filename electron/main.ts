@@ -31,6 +31,12 @@ import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 const isDev = !app.isPackaged;
 const RENDERER_DEV_URL = 'http://localhost:5173';
 
+// Match `src/styles/global.css` `--color-bg`. If the editor's theme
+// changes, update this constant too — Electron's chrome can't read
+// CSS variables.
+const EDITOR_BG = '#1e1e1e';
+const EDITOR_BG_ELEVATED = '#252526';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -43,7 +49,17 @@ const createWindow = (): BrowserWindow => {
     minWidth: 960,
     minHeight: 600,
     title: 'H5 Game Editor',
-    backgroundColor: '#1c1f24',
+    backgroundColor: EDITOR_BG,
+    // Hide the OS chrome so the renderer's MenuBar is the only thing
+    // the user sees at the top. Drag handles (the editor's empty
+    // areas) still let the user move the window.
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    // Tint the small traffic-light / window-control strip so it
+    // doesn't look out of place against the editor's dark theme.
+    titleBarOverlay:
+      process.platform === 'darwin'
+        ? false
+        : { color: EDITOR_BG, symbolColor: EDITOR_BG_ELEVATED, height: 28 },
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
