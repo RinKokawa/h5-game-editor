@@ -139,7 +139,15 @@ const restrictedPaths = {
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', 'coverage', '*.config.js', '*.config.ts'],
+    ignores: [
+      'dist',
+      'dist-electron',
+      'release',
+      'node_modules',
+      'coverage',
+      '*.config.js',
+      '*.config.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
