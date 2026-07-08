@@ -9,3 +9,4 @@
  */
 
 export type { Point, WorldPoint, ScreenPoint, Size, Rect, Color } from './geometry';
+export type { LogLevel, LogLine } from './log';

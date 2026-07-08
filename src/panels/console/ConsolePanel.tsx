@@ -1,25 +1,20 @@
 /**
  * ConsolePanel — diagnostic messages and editor log.
  *
- * Placeholder in v0.1. Shows two translated welcome lines.
- * Step 20 subscribes this panel to the log subsystem.
+ * Reads from `useConsoleStore`. The store is populated by `EditorShell`,
+ * which subscribes to `subscribeLog` on mount. Initial welcome lines
+ * are pushed once on the EditorShell side so the wiring is in one
+ * place.
+ *
+ * No business logic here — this is a pure readout.
  */
 
-import { useT } from '@core/i18n';
+import { useConsoleStore } from '@state/consoleStore';
 
 import styles from './ConsolePanel.module.css';
 
-interface ConsoleLine {
-  readonly level: 'info' | 'warn' | 'error';
-  readonly text: string;
-}
-
 export function ConsolePanel() {
-  const t = useT();
-  const lines: ReadonlyArray<ConsoleLine> = [
-    { level: 'info', text: t('console.welcome') },
-    { level: 'info', text: t('console.noDocument') },
-  ];
+  const lines = useConsoleStore((s) => s.lines);
   return (
     <div className={styles.panel}>
       <ul className={styles.list}>

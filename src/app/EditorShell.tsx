@@ -56,9 +56,11 @@ import { PalettePanel } from '@panels/palette/PalettePanel';
 import { PropertiesPanel } from '@panels/properties/PropertiesPanel';
 import { StatusBar } from '@panels/status-bar/StatusBar';
 import { Toolbar } from '@panels/toolbar/Toolbar';
+import { useConsoleStore } from '@state/consoleStore';
 import { useDocumentStore } from '@state/documentStore';
 import { installHistorySubscriber, uninstallHistorySubscriber } from '@state/historyStore';
 import { useLayoutStore } from '@state/layoutStore';
+import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { DocumentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
 import { HistoryShortcuts } from '@systems/shortcut/HistoryShortcuts';
@@ -98,10 +100,20 @@ export function EditorShell() {
     historyShortcuts.attach();
     selectionShortcuts.attach();
     documentIOShortcuts.attach();
+
+    // Wire the log subsystem -> consoleStore so ConsolePanel renders
+    // every line. `app/` is the only layer that may import both
+    // `systems/` (the publisher) and `state/` (the mirror).
+    const pushLog = useConsoleStore.getState().push;
+    const unsubLog = subscribeLog(pushLog);
+    log.info(ti18n('console.welcome'));
+    log.info(ti18n('console.noDocument'));
+
     return () => {
       historyShortcuts.detach();
       selectionShortcuts.detach();
       documentIOShortcuts.detach();
+      unsubLog();
       uninstallHistorySubscriber();
     };
   }, []);
@@ -146,7 +158,9 @@ export function EditorShell() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        console.error('PixiRenderer failed to start:', err);
+        log.error(
+          `PixiRenderer failed to start: ${err instanceof Error ? err.message : String(err)}`,
+        );
       });
 
     return () => {
@@ -191,8 +205,8 @@ export function EditorShell() {
       shortcut: 'Ctrl+S',
       onClick: () => {
         const outcome = saveDocument();
-        if (outcome.ok) console.info(ti18n('documentio.saved', { n: outcome.bytes }));
-        else console.error(ti18n('documentio.saveFailed', { error: outcome.error }));
+        if (outcome.ok) log.info(ti18n('documentio.saved', { n: outcome.bytes }));
+        else log.error(ti18n('documentio.saveFailed', { error: outcome.error }));
       },
     },
     {
@@ -200,8 +214,8 @@ export function EditorShell() {
       shortcut: 'Ctrl+O',
       onClick: () => {
         const outcome = loadDocument();
-        if (outcome.ok) console.info(ti18n('documentio.loaded', { n: outcome.layerCount }));
-        else console.warn(ti18n('documentio.loadFailed', { error: outcome.error }));
+        if (outcome.ok) log.info(ti18n('documentio.loaded', { n: outcome.layerCount }));
+        else log.warn(ti18n('documentio.loadFailed', { error: outcome.error }));
       },
     },
   ];
