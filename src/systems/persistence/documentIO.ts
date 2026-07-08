@@ -1,26 +1,25 @@
 /**
- * Document I/O — save / load the current Document.
+ * Document I/O — save / load the currently-active Document.
  *
- * Two backends, one API:
+ * Step 18 scoping: the active Document lives at
+ * `<workspace>/documents/<activeDocId>.json`. Save writes to that
+ * path; Load re-reads that path (a manual "revert to disk" gesture,
+ * not a dialog). Both operations require a workspace to be active —
+ * there is no "untitled" / localStorage fallback in Step 18: the
+ * launcher is the only legal way to put a document on screen, and
+ * the File menu's Save / Load become no-ops (with a logged error)
+ * when called outside the editor phase.
  *
- *   - Electron (window.h5 present): the renderer shows a native
- *     Open / Save dialog, then writes the document to a path the user
- *     chose. The IPC bridge is in `electronBridge.ts`; the handlers
- *     live in `electron/main.ts`.
- *
- *   - Plain browser (no window.h5): falls back to localStorage under
- *     a fixed key. Useful for `vite dev` without an Electron shell,
- *     and for vitest under happy-dom.
- *
- * The serializer is in `@core/serialization` and stays editor-agnostic
- * — both backends produce the same wire format, so a file written
- * through Electron can be read back in a browser, and vice versa.
+ * The decision to delete the localStorage fallback is deliberate
+ * (see CLAUDE.md §13 / Step 18). The pre-Step-18 code was a dev
+ * convenience; with a real launcher in place, "no workspace, no
+ * document" is the correct rule rather than a magic last-snapshot.
  *
  * Outcomes are discriminated unions so callers (menu, shortcuts,
  * console) can show useful messages instead of catching exceptions.
  */
 
-import { commandBus } from '@core/command/commandBusSingleton';
+import { commandBus } from '@core/command';
 import {
   deserializeDocument,
   serializeDocument,
@@ -30,27 +29,34 @@ import {
 import { asLayerId } from '@editor/map/schema/ids';
 import { useDocumentStore } from '@state/documentStore';
 import { useSelectionStore } from '@state/selectionStore';
+import { useWorkspaceStore } from '@state/workspaceStore';
 
-import {
-  isElectron,
-  openDialog,
-  readJsonFile,
-  saveAsDialog,
-  writeJsonFile,
-} from './electronBridge';
-
-const STORAGE_KEY = 'h5-editor:document:v1';
+import { isElectron, writeDocumentInWorkspace, readDocumentInWorkspace } from './electronBridge';
 
 export type SaveOutcome =
-  | { readonly ok: true; readonly bytes: number; readonly path: string | null }
+  | { readonly ok: true; readonly bytes: number; readonly path: string }
   | { readonly ok: false; readonly error: string };
 
 export type LoadOutcome =
-  | { readonly ok: true; readonly layerCount: number; readonly path: string | null }
+  | { readonly ok: true; readonly layerCount: number; readonly path: string }
   | { readonly ok: false; readonly error: string };
 
+/**
+ * Serialize the current Document and write it to
+ * `<workspace>/documents/<activeDocId>.json`. The save is
+ * workspace-scoped — no dialog, no Save As. A future "Export to…
+ * dialog" can layer on top without changing this signature.
+ */
 export const saveDocument = async (): Promise<SaveOutcome> => {
   try {
+    if (!isElectron()) {
+      return { ok: false, error: 'Document I/O requires Electron (no window.h5)' };
+    }
+    const ws = useWorkspaceStore.getState();
+    if (ws.phase !== 'editor' || !ws.current || !ws.activeDocId) {
+      return { ok: false, error: 'No active workspace — return to the launcher first' };
+    }
+
     const state = useDocumentStore.getState();
     const serialized: SerializedDocumentV1 = serializeDocument({
       tileSize: state.tileSize,
@@ -58,52 +64,45 @@ export const saveDocument = async (): Promise<SaveOutcome> => {
       layers: state.layers,
     });
     const json = JSON.stringify(serialized, null, 2);
-
-    if (isElectron()) {
-      const path = await saveAsDialog('untitled.json');
-      if (!path) return { ok: false, error: 'Save cancelled' };
-      const result = await writeJsonFile(path, json);
-      if (!result.ok) return { ok: false, error: result.error };
-      return { ok: true, bytes: result.bytes, path };
-    }
-
-    localStorage.setItem(STORAGE_KEY, json);
-    return { ok: true, bytes: json.length, path: null };
+    const targetPath = `${ws.current.path}/documents/${ws.activeDocId}.json`;
+    const result = await writeDocumentInWorkspace(ws.current.path, ws.activeDocId, json);
+    if (!result.ok) return { ok: false, error: result.error };
+    return { ok: true, bytes: result.bytes, path: targetPath };
   } catch (err) {
     return { ok: false, error: errMsg(err) };
   }
 };
 
+/**
+ * Re-read the workspace's active Document from disk. Discards any
+ * in-memory unsaved changes. Called by File ▸ Load and the Ctrl+O
+ * shortcut. There's no dialog — the path is fixed by the workspace.
+ */
 export const loadDocument = async (): Promise<LoadOutcome> => {
   try {
-    if (isElectron()) {
-      const path = await openDialog();
-      if (!path) return { ok: false, error: 'Open cancelled' };
-      const file = await readJsonFile(path);
-      if (!file.ok) return { ok: false, error: file.error };
-      const parsed = JSON.parse(file.text) as unknown;
-      const loaded: LoadedDocument = deserializeDocument(parsed);
-      applyLoaded(loaded);
-      return { ok: true, layerCount: loaded.layers.length, path };
+    if (!isElectron()) {
+      return { ok: false, error: 'Document I/O requires Electron (no window.h5)' };
+    }
+    const ws = useWorkspaceStore.getState();
+    if (ws.phase !== 'editor' || !ws.current || !ws.activeDocId) {
+      return { ok: false, error: 'No active workspace — return to the launcher first' };
     }
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return { ok: false, error: 'No saved document found' };
-    const parsed = JSON.parse(raw) as unknown;
+    const file = await readDocumentInWorkspace(ws.current.path, ws.activeDocId);
+    if (!file.ok) return { ok: false, error: file.error };
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(file.text);
+    } catch (err) {
+      return { ok: false, error: `Document JSON is malformed: ${errMsg(err)}` };
+    }
     const loaded: LoadedDocument = deserializeDocument(parsed);
     applyLoaded(loaded);
-    return { ok: true, layerCount: loaded.layers.length, path: null };
+    const targetPath = `${ws.current.path}/documents/${ws.activeDocId}.json`;
+    return { ok: true, layerCount: loaded.layers.length, path: targetPath };
   } catch (err) {
     return { ok: false, error: errMsg(err) };
-  }
-};
-
-/** True if there is a saved document in localStorage (browser-only). */
-export const hasSavedDocument = (): boolean => {
-  try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
-  } catch {
-    return false;
   }
 };
 

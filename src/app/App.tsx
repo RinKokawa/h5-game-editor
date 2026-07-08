@@ -1,5 +1,5 @@
-import { EditorShell } from './EditorShell';
+import { WorkspaceGate } from './WorkspaceGate';
 
 export function App() {
-  return <EditorShell />;
+  return <WorkspaceGate />;
 }

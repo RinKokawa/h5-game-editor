@@ -20,6 +20,7 @@ const zhCN: Bundle = {
   // MenuBar — File dropdown
   'menu.file.save': '保存',
   'menu.file.load': '加载',
+  'menu.file.launcher': '返回启动器',
 
   // MenuBar — View → Language
   'view.language': '语言',
@@ -160,6 +161,25 @@ const zhCN: Bundle = {
   'documentio.loaded': '[DocumentIO] 已加载({n} 个图层)',
   'documentio.saveFailed': '[DocumentIO] 保存失败:{error}',
   'documentio.loadFailed': '[DocumentIO] 加载失败:{error}',
+
+  // Workspace + Launcher
+  'launcher.appName': 'H5 游戏编辑器',
+  'launcher.tagline': '选择一个工作文件夹以开始编辑。',
+  'launcher.new': '新建工作区',
+  'launcher.open': '打开文件夹…',
+  'launcher.recent': '最近',
+  'launcher.empty': '暂无最近打开的工作区。',
+  'launcher.pathHint': '选择一个空文件夹作为工作区的存放位置。',
+  'launcher.nameLabel': '工作区名称',
+  'launcher.namePlaceholder': 'my-game',
+  'launcher.confirm': '创建',
+  'launcher.cancel': '取消',
+  'launcher.remove': '从列表中移除',
+  'launcher.invalid': '该文件夹已不再是有效的工作区。',
+  'launcher.error.generic': '无法打开工作区:{error}',
+  'launcher.error.noElectron': '工作区需要 Electron 桌面版。',
+  'launcher.workspace.opened': '[Workspace] 已打开"{name}"',
+  'launcher.workspace.created': '[Workspace] 已创建"{name}"',
 };
 
 export default zhCN;

@@ -1,18 +1,24 @@
 /**
- * electronBridge — renderer-side wrapper for the four IPC calls the
+ * electronBridge — renderer-side wrapper for the IPC surface the
  * preload script exposes via `contextBridge` as `window.h5`.
  *
- * When `window.h5` is present (Electron with the dev/main bundle),
- * `isElectron()` returns true and callers should use this bridge
- * instead of the localStorage-based documentIO. When it's absent
- * (plain `vite dev`, no Electron wrapper), the bridge is a no-op and
- * `isElectron()` returns false — the renderer falls back to whatever
- * persistence layer the caller is already wired to.
+ * Two domains are wrapped here, mirroring the preload interface:
+ *   - Document I/O (pre-Step 18): dialog + raw fs read/write of a
+ *     single .json chosen via dialog.
+ *   - Workspace I/O (Step 18): folder picker + workspace bootstrap
+ *     and document read/write inside it. Recents are file-locked
+ *     inside the main process; the renderer only sees typed lists.
+ *
+ * Every function short-circuits with a typed "Electron bridge not
+ * available" outcome when `window.h5` is absent — that's the
+ * `vite dev` (no Electron) and vitest happy-dom paths. Callers
+ * compose their own fallback (see `workspaceIO.ts` / `documentIO.ts`).
  *
  * This file does NOT touch the Document directly — it's a thin,
- * typed transport. The same `serializeDocument` / `deserializeDocument`
- * functions in `@core/serialization` are reused; we just hand the JSON
- * back and forth across the IPC boundary.
+ * typed transport. The same `serializeDocument` /
+ * `deserializeDocument` functions in `@core/serialization` are
+ * reused; we just hand the JSON back and forth across the IPC
+ * boundary.
  *
  * `H5Bridge` is duplicated here (rather than imported from
  * `electron/preload.ts`) because the two tsconfigs split src/ and
@@ -30,6 +36,40 @@ export interface H5Bridge {
     filePath: string,
     text: string,
   ) => Promise<{ ok: true; bytes: number } | { ok: false; error: string }>;
+
+  readonly pickFolder: () => Promise<string | null>;
+  readonly createWorkspace: (
+    folderPath: string,
+    name: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  readonly statWorkspace: (
+    folderPath: string,
+  ) => Promise<{ ok: true; name: string; activeDocId: string } | { ok: false; error: string }>;
+  readonly readDocumentInWorkspace: (
+    folderPath: string,
+    docId: string,
+  ) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
+  readonly writeDocumentInWorkspace: (
+    folderPath: string,
+    docId: string,
+    text: string,
+  ) => Promise<{ ok: true; bytes: number } | { ok: false; error: string }>;
+  readonly listDocumentsInWorkspace: (
+    folderPath: string,
+  ) => Promise<
+    { ok: true; entries: Array<{ id: string; name: string }> } | { ok: false; error: string }
+  >;
+
+  readonly loadRecents: () => Promise<
+    | { ok: true; entries: Array<{ path: string; name: string; lastOpenedAt: number }> }
+    | {
+        ok: false;
+        error: string;
+      }
+  >;
+  readonly saveRecents: (
+    entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 declare global {
@@ -39,6 +79,8 @@ declare global {
 }
 
 export const isElectron = (): boolean => typeof window !== 'undefined' && window.h5 !== undefined;
+
+// --- Document I/O ----------------------------------------------------
 
 export const openDialog = async (): Promise<string | null> => {
   if (!window.h5) return null;
@@ -63,4 +105,72 @@ export const writeJsonFile = async (
 ): Promise<{ ok: true; bytes: number } | { ok: false; error: string }> => {
   if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
   return window.h5.writeJson(filePath, text);
+};
+
+// --- Workspace I/O ---------------------------------------------------
+
+export const pickFolder = async (): Promise<string | null> => {
+  if (!window.h5) return null;
+  return window.h5.pickFolder();
+};
+
+export const createWorkspace = async (
+  folderPath: string,
+  name: string,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.createWorkspace(folderPath, name);
+};
+
+export const statWorkspace = async (
+  folderPath: string,
+): Promise<{ ok: true; name: string; activeDocId: string } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.statWorkspace(folderPath);
+};
+
+export const readDocumentInWorkspace = async (
+  folderPath: string,
+  docId: string,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.readDocumentInWorkspace(folderPath, docId);
+};
+
+export const writeDocumentInWorkspace = async (
+  folderPath: string,
+  docId: string,
+  text: string,
+): Promise<{ ok: true; bytes: number } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.writeDocumentInWorkspace(folderPath, docId, text);
+};
+
+export const listDocumentsInWorkspace = async (
+  folderPath: string,
+): Promise<
+  { ok: true; entries: Array<{ id: string; name: string }> } | { ok: false; error: string }
+> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.listDocumentsInWorkspace(folderPath);
+};
+
+// --- Recents ---------------------------------------------------------
+
+export const loadRecents = async (): Promise<
+  | { ok: true; entries: Array<{ path: string; name: string; lastOpenedAt: number }> }
+  | {
+      ok: false;
+      error: string;
+    }
+> => {
+  if (!window.h5) return { ok: true, entries: [] };
+  return window.h5.loadRecents();
+};
+
+export const saveRecents = async (
+  entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: true };
+  return window.h5.saveRecents(entries);
 };

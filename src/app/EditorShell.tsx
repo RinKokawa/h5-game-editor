@@ -70,6 +70,7 @@ import { useConsoleStore } from '@state/consoleStore';
 import { useDocumentStore } from '@state/documentStore';
 import { installHistorySubscriber, uninstallHistorySubscriber } from '@state/historyStore';
 import { useLayoutStore } from '@state/layoutStore';
+import { useWorkspaceStore } from '@state/workspaceStore';
 import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { DocumentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
@@ -261,6 +262,10 @@ export function EditorShell() {
           }
         });
       },
+    },
+    {
+      labelKey: 'menu.file.launcher',
+      onClick: () => useWorkspaceStore.getState().leave(),
     },
   ];
 

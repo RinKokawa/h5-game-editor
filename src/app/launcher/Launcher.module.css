@@ -1,0 +1,280 @@
+.launcher {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  user-select: none;
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  padding: 56px 64px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.brandTitle {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brandTagline {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px 18px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  transition:
+    border-color 80ms,
+    background 80ms;
+}
+
+.action:hover,
+.action:focus-visible {
+  border-color: var(--color-accent);
+  background: var(--color-bg-panel);
+  outline: none;
+}
+
+.action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.actionLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.actionHint {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--color-border);
+  padding-left: 24px;
+}
+
+.recentHeading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+.recentList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.recentItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--color-text);
+  transition: border-color 80ms;
+  position: relative;
+}
+
+.recentItem:hover,
+.recentItem:focus-within {
+  border-color: var(--color-accent);
+}
+
+.recentName {
+  font-size: 13px;
+  font-weight: 500;
+  padding-right: 24px;
+}
+
+.recentPath {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  word-break: break-all;
+}
+
+.recentRemove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 100ms,
+    color 100ms,
+    background 100ms;
+}
+
+.recentItem:hover .recentRemove,
+.recentItem:focus-within .recentRemove {
+  opacity: 1;
+}
+
+.recentRemove:hover {
+  background: var(--color-bg-panel);
+  color: var(--color-text);
+}
+
+.recentEmpty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 16px 0;
+}
+
+/* ----- New-workspace modal ----- */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modalHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.modalInput {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  color: var(--color-text);
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.modalError {
+  font-size: 12px;
+  color: #f48771;
+  line-height: 1.3;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modalButton {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.modalButton:hover {
+  border-color: var(--color-accent);
+}
+
+.modalButton.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.modalButton.primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.modalButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

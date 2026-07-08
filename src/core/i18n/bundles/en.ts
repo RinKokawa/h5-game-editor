@@ -21,6 +21,7 @@ const en: Bundle = {
   // MenuBar — File dropdown
   'menu.file.save': 'Save',
   'menu.file.load': 'Load',
+  'menu.file.launcher': 'Back to Launcher',
 
   // MenuBar — View → Language
   'view.language': 'Language',
@@ -161,6 +162,25 @@ const en: Bundle = {
   'documentio.loaded': '[DocumentIO] loaded ({n} layers)',
   'documentio.saveFailed': '[DocumentIO] save failed: {error}',
   'documentio.loadFailed': '[DocumentIO] load failed: {error}',
+
+  // Workspace + Launcher
+  'launcher.appName': 'H5 Game Editor',
+  'launcher.tagline': 'Pick a workspace to start editing.',
+  'launcher.new': 'New Workspace',
+  'launcher.open': 'Open Folder…',
+  'launcher.recent': 'Recent',
+  'launcher.empty': 'No recent workspaces yet.',
+  'launcher.pathHint': 'Pick an empty folder where this workspace will live.',
+  'launcher.nameLabel': 'Workspace name',
+  'launcher.namePlaceholder': 'my-game',
+  'launcher.confirm': 'Create',
+  'launcher.cancel': 'Cancel',
+  'launcher.remove': 'Remove from list',
+  'launcher.invalid': 'This folder is no longer a valid workspace.',
+  'launcher.error.generic': 'Could not open workspace: {error}',
+  'launcher.error.noElectron': 'Workspaces require the Electron desktop build.',
+  'launcher.workspace.opened': '[Workspace] opened "{name}"',
+  'launcher.workspace.created': '[Workspace] created "{name}"',
 };
 
 export default en;

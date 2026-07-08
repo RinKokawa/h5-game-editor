@@ -3,15 +3,16 @@
  *
  * Responsibilities:
  *   - Create a single BrowserWindow and load the renderer.
- *   - Register IPC handlers for the four document-IO operations the
- *     renderer needs (show-open-dialog, show-save-dialog, read-json,
- *     write-json). The handler bodies live here, not in preload, so
- *     the renderer only sees a typed surface area via contextBridge.
+ *   - Register IPC handlers for everything the renderer needs:
+ *       * Document I/O        (open/save dialog + raw fs read/write)
+ *       * Workspace I/O        (folder picker, create/stat workspace,
+ *                               list/read/write documents inside it)
+ *       * Recents persistence  (file in `app.getPath('userData')`)
  *
  * Dev vs. prod loading:
- *   - `npm run dev`     → loads http://localhost:5173 (Vite HMR)
- *   - `npm run electron:dev` → same, with the dev tools open
- *   - packaged build    → loads dist/index.html via file://
+ *   - `npm run dev`            → loads http://localhost:5173 (Vite HMR)
+ *   - `npm run electron:dev`   → same, with the dev tools open
+ *   - packaged build           → loads dist/index.html via file://
  *
  * Security stance:
  *   - contextIsolation: true (default)
@@ -22,7 +23,7 @@
  *     cannot read or write arbitrary paths directly.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,6 +39,17 @@ const EDITOR_BG = '#1e1e1e';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Workspace on-disk layout constants. The single source of truth —
+// the renderer's `core/workspace/schema.ts` carries the same values
+// for its in-memory types. Bump versions in both places together.
+const WORKSPACE_CONFIG_FILENAME = 'h5-editor.json';
+const DOCUMENTS_DIRNAME = 'documents';
+const ASSETS_DIRNAME = 'assets';
+const WORKSPACE_SCHEMA_VERSION = 1;
+const RECENT_LIST_VERSION = 1;
+const RECENT_LIST_FILENAME = 'recent.json';
+const MAX_RECENT_ENTRIES = 10;
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -79,9 +91,67 @@ const createWindow = (): BrowserWindow => {
   return win;
 };
 
+// ---------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------
+
+const errMsg = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
+const recentListPath = (): string =>
+  path.join(app.getPath('userData'), RECENT_LIST_FILENAME);
+
+// Tiny validation helpers. These are the wall between disk and the
+// renderer — keep them strict enough to refuse obviously-bad payloads
+// before they round-trip back. The narrow types double as guards so
+// callers can read fields off the parsed JSON without re-narrowing.
+interface WorkspaceConfigShape {
+  version: number;
+  name: string;
+  activeDocId: string;
+  documents: unknown[];
+  lastSavedAt: number;
+}
+interface RecentListShape {
+  version: number;
+  entries: unknown[];
+}
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const isWorkspaceConfig = (raw: unknown): raw is WorkspaceConfigShape => {
+  if (!isObject(raw)) return false;
+  if (raw['version'] !== WORKSPACE_SCHEMA_VERSION) return false;
+  if (typeof raw['name'] !== 'string' || raw['name'].length === 0) return false;
+  if (typeof raw['activeDocId'] !== 'string' || raw['activeDocId'].length === 0) return false;
+  if (!Array.isArray(raw['documents'])) return false;
+  if (typeof raw['lastSavedAt'] !== 'number') return false;
+  return true;
+};
+
+const isRecentList = (raw: unknown): raw is RecentListShape => {
+  if (!isObject(raw)) return false;
+  if (raw['version'] !== RECENT_LIST_VERSION) return false;
+  return Array.isArray(raw['entries']);
+};
+
+const isRecentEntry = (v: unknown): v is { path: string; name: string; lastOpenedAt: number } => {
+  if (!isObject(v)) return false;
+  return (
+    typeof v['path'] === 'string' &&
+    v['path'].length > 0 &&
+    typeof v['name'] === 'string' &&
+    typeof v['lastOpenedAt'] === 'number'
+  );
+};
+
+// ---------------------------------------------------------------------
+// IPC registration
+// ---------------------------------------------------------------------
+
 const registerIpc = (): void => {
-  // Pick a file to open. Returns the absolute path, or null if the
-  // user cancelled. The renderer reads the file with `fs:readJson`.
+  // -------------------- Document I/O (pre-Step 18) --------------------
+
   ipcMain.handle('dialog:open', async () => {
     if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -96,8 +166,6 @@ const registerIpc = (): void => {
     return result.filePaths[0] ?? null;
   });
 
-  // Pick a path to save to. Returns the absolute path, or null if the
-  // user cancelled. The renderer writes the file with `fs:writeJson`.
   ipcMain.handle('dialog:saveAs', async (_event, defaultName?: string) => {
     if (!mainWindow) return null;
     const result = await dialog.showSaveDialog(mainWindow, {
@@ -109,9 +177,6 @@ const registerIpc = (): void => {
     return result.filePath;
   });
 
-  // Read a JSON file from disk. Caller is responsible for parsing —
-  // we return raw bytes (utf-8 string) so the renderer's existing
-  // JSON.parse + deserializeDocument path stays in renderer-land.
   ipcMain.handle('fs:readJson', async (_event, filePath: string) => {
     try {
       const text = await readFile(filePath, 'utf-8');
@@ -121,8 +186,6 @@ const registerIpc = (): void => {
     }
   });
 
-  // Write text to a JSON file on disk. Returns bytes written or an
-  // error string — same outcome shape the renderer already uses.
   ipcMain.handle('fs:writeJson', async (_event, filePath: string, text: string) => {
     try {
       await writeFile(filePath, text, 'utf-8');
@@ -131,9 +194,232 @@ const registerIpc = (): void => {
       return { ok: false as const, error: errMsg(err) };
     }
   });
+
+  // ----------------------- Workspace I/O (Step 18) --------------------
+
+  // Show a folder picker; return the selected absolute path, or null
+  // if the user cancelled.
+  ipcMain.handle('dialog:pickFolder', async () => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Pick workspace folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0] ?? null;
+  });
+
+  // Bootstrap a brand-new workspace at the given path. Creates the
+  // directory tree (h5-editor.json + documents/ + assets/) and writes
+  // the initial config. Refuses if the folder is non-empty (would
+  // risk overwriting existing project data).
+  ipcMain.handle(
+    'workspace:create',
+    async (_event, folderPath: string, name: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+      try {
+        const trimmed = name.trim();
+        if (trimmed.length === 0) return { ok: false, error: 'Workspace name is empty' };
+
+        await mkdir(folderPath, { recursive: true });
+
+        const existing = await readdir(folderPath);
+        if (existing.length > 0) {
+          return {
+            ok: false,
+            error: 'Folder is not empty. Pick an empty folder to create a new workspace.',
+          };
+        }
+
+        await mkdir(path.join(folderPath, DOCUMENTS_DIRNAME), { recursive: true });
+        await mkdir(path.join(folderPath, ASSETS_DIRNAME), { recursive: true });
+
+        // v0.1 creates one empty document upfront so the editor has
+        // something to load. The document body is the same wire format
+        // `serializeDocument()` produces for an empty map.
+        const docId = `doc.${Date.now().toString(36)}.${randomSuffix()}`;
+        const emptyDoc = {
+          version: 1,
+          kind: 'document',
+          tileSize: 32,
+          mapSize: { width: 20, height: 15 },
+          layers: [],
+          activeLayerId: '',
+        };
+        await writeFile(
+          path.join(folderPath, DOCUMENTS_DIRNAME, `${docId}.json`),
+          JSON.stringify(emptyDoc, null, 2),
+          'utf-8',
+        );
+
+        const config = {
+          version: WORKSPACE_SCHEMA_VERSION,
+          name: trimmed,
+          activeDocId: docId,
+          documents: [{ id: docId, name: 'Map 1' }],
+          lastSavedAt: Date.now(),
+        };
+        await writeFile(
+          path.join(folderPath, WORKSPACE_CONFIG_FILENAME),
+          JSON.stringify(config, null, 2),
+          'utf-8',
+        );
+
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
+
+  // Read the workspace config and return its identity (name +
+  // activeDocId). Used by the launcher when opening an existing
+  // workspace to decide whether to enter the editor and which
+  // document to load.
+  ipcMain.handle(
+    'workspace:stat',
+    async (
+      _event,
+      folderPath: string,
+    ): Promise<
+      { ok: true; name: string; activeDocId: string } | { ok: false; error: string }
+    > => {
+      try {
+        const text = await readFile(
+          path.join(folderPath, WORKSPACE_CONFIG_FILENAME),
+          'utf-8',
+        );
+        const parsed: unknown = JSON.parse(text);
+        if (!isWorkspaceConfig(parsed)) {
+          return { ok: false, error: 'Invalid workspace config: schema mismatch' };
+        }
+        return { ok: true, name: parsed.name, activeDocId: parsed.activeDocId };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
+
+  // List every `documents/*.json` inside a workspace. Returns id +
+  // name pairs. The renderer's `useDocumentStore` expects to know
+  // which doc is currently active (matters only once we ship
+  // multi-doc switching; safe to forward as-is).
+  ipcMain.handle(
+    'workspace:listDocuments',
+    async (
+      _event,
+      folderPath: string,
+    ): Promise<
+      | { ok: true; entries: Array<{ id: string; name: string }> }
+      | { ok: false; error: string }
+    > => {
+      try {
+        const docsDir = path.join(folderPath, DOCUMENTS_DIRNAME);
+        const entries = await readdir(docsDir);
+        const jsonFiles = entries.filter((e) => e.endsWith('.json'));
+        const out: Array<{ id: string; name: string }> = [];
+        for (const filename of jsonFiles) {
+          const docId = filename.replace(/\.json$/, '');
+          try {
+            const text = await readFile(path.join(docsDir, filename), 'utf-8');
+            const parsed: unknown = JSON.parse(text);
+            const name =
+              isObject(parsed) && typeof parsed['name'] === 'string' ? parsed['name'] : docId;
+            out.push({ id: docId, name });
+          } catch {
+            // Skip malformed documents rather than failing the whole
+            // listing; a missing document in the table is recoverable.
+          }
+        }
+        return { ok: true, entries: out };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'workspace:readDocument',
+    async (
+      _event,
+      folderPath: string,
+      docId: string,
+    ): Promise<{ ok: true; text: string } | { ok: false; error: string }> => {
+      try {
+        const text = await readFile(
+          path.join(folderPath, DOCUMENTS_DIRNAME, `${docId}.json`),
+          'utf-8',
+        );
+        return { ok: true, text };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'workspace:writeDocument',
+    async (
+      _event,
+      folderPath: string,
+      docId: string,
+      text: string,
+    ): Promise<{ ok: true; bytes: number } | { ok: false; error: string }> => {
+      try {
+        const filePath = path.join(folderPath, DOCUMENTS_DIRNAME, `${docId}.json`);
+        await writeFile(filePath, text, 'utf-8');
+        return { ok: true, bytes: text.length };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
+
+  // ----------------------- Recents (Step 18) -----------------------
+
+  // Recents live at `<userData>/recent.json` — app-owned path, the
+  // renderer never sees it. Returning `entries: []` when the file is
+  // missing is the expected first-run behavior.
+  ipcMain.handle('recents:load', async () => {
+    try {
+      const text = await readFile(recentListPath(), 'utf-8');
+      const parsed: unknown = JSON.parse(text);
+      if (!isRecentList(parsed)) {
+        return { ok: false as const, error: 'Corrupt recent list on disk' };
+      }
+      const entries = parsed.entries.filter(isRecentEntry);
+      return { ok: true as const, entries };
+    } catch (err) {
+      const e = err as NodeJS.ErrnoException;
+      if (e.code === 'ENOENT') return { ok: true as const, entries: [] };
+      return { ok: false as const, error: errMsg(err) };
+    }
+  });
+
+  ipcMain.handle(
+    'recents:save',
+    async (
+      _event,
+      entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
+      try {
+        // Cap before writing so a corrupt caller can't bloat the
+        // file. The renderer also caps; this is defence-in-depth.
+        const capped = entries.slice(0, MAX_RECENT_ENTRIES);
+        const payload = { version: RECENT_LIST_VERSION, entries: capped };
+        await writeFile(recentListPath(), JSON.stringify(payload, null, 2), 'utf-8');
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: errMsg(err) };
+      }
+    },
+  );
 };
 
-const errMsg = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);
+
+// ---------------------------------------------------------------------
+// App lifecycle
+// ---------------------------------------------------------------------
 
 app
   .whenReady()

@@ -28,6 +28,7 @@ const jaJP: Bundle = {
   // MenuBar — File dropdown
   'menu.file.save': '保存',
   'menu.file.load': '読み込み',
+  'menu.file.launcher': 'ランチャーに戻る',
 
   // MenuBar — View → Language
   'view.language': '言語',
@@ -171,6 +172,25 @@ const jaJP: Bundle = {
   'documentio.loaded': '[DocumentIO] 読み込みました({n} レイヤー)',
   'documentio.saveFailed': '[DocumentIO] 保存に失敗:{error}',
   'documentio.loadFailed': '[DocumentIO] 読み込みに失敗:{error}',
+
+  // Workspace + Launcher
+  'launcher.appName': 'H5 ゲームエディター',
+  'launcher.tagline': '編集するワークスペースを選んでください。',
+  'launcher.new': '新規ワークスペース',
+  'launcher.open': 'フォルダーを開く…',
+  'launcher.recent': '最近',
+  'launcher.empty': '最近開いたワークスペースはありません。',
+  'launcher.pathHint': 'ワークスペースを保存する空のフォルダーを選んでください。',
+  'launcher.nameLabel': 'ワークスペース名',
+  'launcher.namePlaceholder': 'my-game',
+  'launcher.confirm': '作成',
+  'launcher.cancel': 'キャンセル',
+  'launcher.remove': '一覧から削除',
+  'launcher.invalid': 'このフォルダーは有効なワークスペースではありません。',
+  'launcher.error.generic': 'ワークスペースを開けません:{error}',
+  'launcher.error.noElectron': 'ワークスペースは Electron デスクトップ版が必要です。',
+  'launcher.workspace.opened': '[Workspace] ワークスペースを開きました:「{name}」',
+  'launcher.workspace.created': '[Workspace] ワークスペースを作成しました:「{name}」',
 };
 
 export default jaJP;
