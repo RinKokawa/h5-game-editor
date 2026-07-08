@@ -74,6 +74,7 @@ import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { DocumentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
 import { HistoryShortcuts } from '@systems/shortcut/HistoryShortcuts';
 import { SelectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
+import { ToolShortcuts } from '@systems/shortcut/ToolShortcuts';
 
 import styles from './EditorShell.module.css';
 
@@ -109,9 +110,11 @@ export function EditorShell() {
     installHistorySubscriber();
     const historyShortcuts = new HistoryShortcuts();
     const selectionShortcuts = new SelectionShortcuts();
+    const toolShortcuts = new ToolShortcuts();
     const documentIOShortcuts = new DocumentIOShortcuts();
     historyShortcuts.attach();
     selectionShortcuts.attach();
+    toolShortcuts.attach();
     documentIOShortcuts.attach();
 
     // Wire the log subsystem -> consoleStore so ConsolePanel renders
@@ -125,6 +128,7 @@ export function EditorShell() {
     return () => {
       historyShortcuts.detach();
       selectionShortcuts.detach();
+      toolShortcuts.detach();
       documentIOShortcuts.detach();
       unsubLog();
       uninstallHistorySubscriber();
