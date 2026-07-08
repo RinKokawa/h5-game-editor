@@ -24,6 +24,9 @@
 }
 
 .toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-width: 36px;
   height: 28px;
   padding: 0 8px;
@@ -33,6 +36,17 @@
   border-radius: 2px;
   color: var(--color-text);
   cursor: pointer;
+}
+
+.shortcut {
+  font-size: 11px;
+  opacity: 0.65;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.toolButton[data-active='true'] .shortcut,
+.actionButton[data-active='true'] .shortcut {
+  opacity: 0.85;
 }
 
 .toolButton:hover {
@@ -46,6 +60,9 @@
 }
 
 .actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 28px;
   padding: 0 12px;
   font-size: 12px;

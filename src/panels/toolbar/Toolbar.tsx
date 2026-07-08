@@ -66,7 +66,12 @@ export function Toolbar() {
                   : label
               }
             >
-              {label}
+              <span>{label}</span>
+              {tool.shortcut ? (
+                <span className={styles.shortcut} aria-hidden="true">
+                  [{tool.shortcut}]
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -81,6 +86,9 @@ export function Toolbar() {
           onClick={undo}
         >
           {t('toolbar.undo')}
+          <span className={styles.shortcut} aria-hidden="true">
+            [Ctrl+Z]
+          </span>
         </button>
         <button
           type="button"
@@ -90,6 +98,9 @@ export function Toolbar() {
           onClick={redo}
         >
           {t('toolbar.redo')}
+          <span className={styles.shortcut} aria-hidden="true">
+            [Ctrl+Y]
+          </span>
         </button>
       </div>
     </nav>
