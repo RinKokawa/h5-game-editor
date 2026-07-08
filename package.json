@@ -19,7 +19,7 @@
     "build:electron-renderer": "vite build",
     "build:electron-main": "tsc -p tsconfig.node.json",
     "build:electron": "npm run build && npm run build:electron-main",
-    "electron:dev": "npm run build:electron-main && concurrently -k -n VITE,ELECTRON -c blue,magenta \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "npm run build:electron-main && concurrently -k -n VITE,ELECTRON -c blue,magenta \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:package": "npm run build:electron && electron-builder",
     "electron:start": "electron ."
   },
