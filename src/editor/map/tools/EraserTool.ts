@@ -1,16 +1,19 @@
 /**
  * EraserTool — drag to erase tiles in the active layer.
  *
- * Identical to BrushTool, but every stroke forces an erase
- * regardless of the palette selection. Activating the Eraser icon
- * from the toolbar guarantees erasure, which is what users expect.
+ * Identical to BrushTool in mechanics, but every stroke forces an
+ * erase regardless of the palette selection. Activating the Eraser
+ * icon from the toolbar guarantees erasure, which is what users
+ * expect.
  *
- * Like BrushTool, each pointerdown→pointerup stroke is bundled into
- * a single CompositeCommand.
+ * Live-paint semantics match BrushTool: every cell the cursor
+ * passes over during a drag is erased immediately. The whole stroke
+ * is still a single Ctrl+Z entry via {@link StrokeCommand}.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
-import { CompositeCommand } from '@core/command/CompositeCommand';
+import { StrokeCommand } from '@core/command/StrokeCommand';
+import { documentService } from '@core/document/documentServiceSingleton';
 import { EraseTileCommand } from '@editor/map/commands/index';
 import { screenToWorld } from '@shared/math/index';
 import { useDocumentStore } from '@state/documentStore';
@@ -104,9 +107,8 @@ export class EraserTool {
 
   private flushStroke(): void {
     if (this.strokeBuffer.length === 0) return;
-    const composite = new CompositeCommand(this.strokeBuffer);
+    commandBus.execute(new StrokeCommand(this.strokeBuffer));
     this.strokeBuffer = [];
-    commandBus.execute(composite);
   }
 
   private paintAt(event: PointerEvent): void {
@@ -135,6 +137,8 @@ export class EraserTool {
     if (!activeLayer || activeLayer.type !== 'tile') return;
     if (activeLayer.locked) return;
 
-    this.strokeBuffer.push(new EraseTileCommand(activeLayer.id, coord));
+    const cmd = new EraseTileCommand(activeLayer.id, coord);
+    cmd.do(documentService);
+    this.strokeBuffer.push(cmd);
   }
 }

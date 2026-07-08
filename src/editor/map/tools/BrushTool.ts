@@ -6,6 +6,14 @@
  * `CompositeCommand`. One drag stroke is therefore one Ctrl+Z, not
  * dozens.
  *
+ * Live-paint semantics: every cell the cursor passes over during
+ * a drag is painted IMMEDIATELY (the user sees tiles appear as they
+ * drag, not all at once on release). The stroke is still a single
+ * undo entry — BrushTool holds the pre-executed Commands in a
+ * buffer and dispatches a {@link StrokeCommand} at pointerup.
+ * StrokeCommand's `do()` is a no-op (children already ran); its
+ * `undo()` walks the buffer in reverse to restore each cell.
+ *
  * Pan-vs-paint arbitration: Camera owns the pan gesture (middle
  * button, or Space+left). BrushTool independently tracks Space so
  * it knows not to paint under Space; both tools can coexist on the
@@ -13,7 +21,8 @@
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
-import { CompositeCommand } from '@core/command/CompositeCommand';
+import { StrokeCommand } from '@core/command/StrokeCommand';
+import { documentService } from '@core/document/documentServiceSingleton';
 import { EraseTileCommand, PlaceTileCommand } from '@editor/map/commands/index';
 import { isEraserTile } from '@editor/map/palette/defaultPalette';
 import { screenToWorld } from '@shared/math/index';
@@ -109,15 +118,15 @@ export class BrushTool {
   }
 
   /**
-   * Dispatch the accumulated stroke as a single CompositeCommand. If
-   * the buffer is empty (no paints landed inside the map) this is a
-   * no-op — we don't want Ctrl+Z to surface a phantom undo entry.
+   * Push the accumulated stroke onto the history as a single undo
+   * entry. If the buffer is empty (no paints landed inside the map)
+   * this is a no-op — we don't want Ctrl+Z to surface a phantom
+   * undo entry for a click in the gutter.
    */
   private flushStroke(): void {
     if (this.strokeBuffer.length === 0) return;
-    const composite = new CompositeCommand(this.strokeBuffer);
+    commandBus.execute(new StrokeCommand(this.strokeBuffer));
     this.strokeBuffer = [];
-    commandBus.execute(composite);
   }
 
   private paintAt(event: PointerEvent): void {
@@ -150,18 +159,22 @@ export class BrushTool {
     if (activeLayer.locked) return;
 
     const activeTileId = useBrushStore.getState().activeTileId;
+    let cmd: Command;
     if (isEraserTile(activeTileId)) {
-      this.strokeBuffer.push(new EraseTileCommand(activeLayer.id, coord));
+      cmd = new EraseTileCommand(activeLayer.id, coord);
     } else {
-      this.strokeBuffer.push(
-        new PlaceTileCommand(activeLayer.id, coord, {
-          tilesetId: PLACEHOLDER_TILESET_ID,
-          tileId: activeTileId,
-          rotation: 0,
-          flipX: false,
-          flipY: false,
-        }),
-      );
+      cmd = new PlaceTileCommand(activeLayer.id, coord, {
+        tilesetId: PLACEHOLDER_TILESET_ID,
+        tileId: activeTileId,
+        rotation: 0,
+        flipX: false,
+        flipY: false,
+      });
     }
+    // Execute live so the user sees tiles appear during the drag.
+    // The same `cmd` is also retained in `strokeBuffer` so the
+    // resulting StrokeCommand can `undo()` it as one unit.
+    cmd.do(documentService);
+    this.strokeBuffer.push(cmd);
   }
 }
