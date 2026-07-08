@@ -12,15 +12,16 @@
  * `Vars` accepts strings and numbers (status bar uses `{n} cells`).
  */
 
-export type Locale = 'en' | 'zh-CN';
+export type Locale = 'en' | 'zh-CN' | 'ja-JP';
 
 export const DEFAULT_LOCALE: Locale = 'en';
 
-export const AVAILABLE_LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[];
+export const AVAILABLE_LOCALES = ['en', 'zh-CN', 'ja-JP'] as const satisfies readonly Locale[];
 
 export const NATIVE_NAMES: Readonly<Record<Locale, string>> = {
   en: 'English',
   'zh-CN': '简体中文',
+  'ja-JP': '日本語',
 };
 
 export type Bundle = Readonly<Record<string, string>>;

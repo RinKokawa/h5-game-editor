@@ -6,6 +6,7 @@
  */
 
 import en from './en';
+import jaJP from './ja-JP';
 import zhCN from './zh-CN';
 
 import type { Bundle, Locale } from '../types';
@@ -13,6 +14,7 @@ import type { Bundle, Locale } from '../types';
 export const bundles: Readonly<Record<Locale, Bundle>> = {
   en,
   'zh-CN': zhCN,
+  'ja-JP': jaJP,
 };
 
 /** Returns the bundle for a given locale. v1 is synchronous. */
