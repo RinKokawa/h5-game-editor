@@ -26,7 +26,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 
 const isDev = !app.isPackaged;
 const RENDERER_DEV_URL = 'http://localhost:5173';
@@ -126,6 +126,11 @@ app
   .whenReady()
   .then(() => {
     registerIpc();
+    // The renderer ships its own MenuBar (React + i18n). The default
+    // Electron menu duplicates File/Edit/View/Window and clashes with
+    // ours, so null it out. macOS still gets the system menu but the
+    // app-name entry is the only thing left; harmless.
+    Menu.setApplicationMenu(null);
     mainWindow = createWindow();
 
     app.on('activate', () => {
