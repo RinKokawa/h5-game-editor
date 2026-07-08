@@ -94,9 +94,52 @@ const zhCN: Bundle = {
   'dock.properties': '属性',
   'dock.console': '控制台',
 
-  // Console mock messages
+  // Console messages
   'console.welcome': 'H5 游戏编辑器已启动。',
   'console.noDocument': '尚未加载文档 — 文件 ▸ 新建 以创建。',
+  'console.layerAdded': '[Document] 已新增图层"{name}"',
+  'console.layerRemoved': '[Document] 已删除图层"{name}"',
+  'console.tilePlaced': '[Document] 已在({x}, {y})放置瓦片',
+  'console.tileErased': '[Document] 已擦除({x}, {y})瓦片',
+  'console.entityPlaced': '[Document] 已在({x}, {y})放置实体"{name}"',
+  'console.colliderPlaced': '[Document] 已在({x}, {y})放置碰撞体({w}×{h})',
+
+  // Asset browser folders
+  'asset.folder.tilesets': '瓦片集',
+  'asset.folder.sprites': '精灵图',
+  'asset.folder.audio': '音频',
+  'asset.folder.scripts': '脚本',
+
+  // Properties panel — key labels + empty state
+  'properties.empty.title': '当前无选区',
+  'properties.empty.hint': '选中瓦片、实体或碰撞体后可在此查看其属性。',
+  'properties.id': '编号',
+  'properties.type': '类型',
+  'properties.position': '位置',
+  'properties.size': '尺寸',
+  'properties.rotation': '旋转',
+  'properties.layer': '所在图层',
+  'properties.cells': '单元格',
+  'properties.entityCount': '实体数',
+  'properties.colliderCount': '碰撞体数',
+
+  // Palette — per-tile swatch labels (id 0 是橡皮)
+  'palette.entry.0': '橡皮',
+  'palette.entry.1': '砖块',
+  'palette.entry.2': '水',
+  'palette.entry.3': '草地',
+  'palette.entry.4': '沙地',
+  'palette.entry.5': '石板',
+  'palette.entry.6': '墙体',
+  'palette.entry.7': '木板',
+  'palette.entry.8': '雪地',
+  'palette.entry.9': '混凝土',
+  'palette.entry.10': '砂岩',
+  'palette.entry.11': '冰面',
+  'palette.entry.12': '苔藓',
+  'palette.entry.13': '魔法',
+  'palette.entry.14': '熔岩',
+  'palette.entry.15': '阴影',
 
   // Project slot
   'project.untitled': '未命名项目',

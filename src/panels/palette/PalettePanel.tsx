@@ -42,7 +42,7 @@ export function PalettePanel() {
               data-eraser={isEraser}
               style={{ backgroundColor: `#${entry.color.toString(16).padStart(6, '0')}` }}
               onClick={() => setActiveTile(entry.id)}
-              title={entry.label}
+              title={t(entry.labelKey)}
             >
               <span className={styles.swatchId}>{entry.id}</span>
             </button>

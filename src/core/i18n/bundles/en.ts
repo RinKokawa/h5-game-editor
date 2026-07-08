@@ -95,9 +95,52 @@ const en: Bundle = {
   'dock.properties': 'Properties',
   'dock.console': 'Console',
 
-  // Console mock messages
+  // Console messages
   'console.welcome': 'H5 Game Editor started.',
   'console.noDocument': 'No document loaded — File ▸ New to create one.',
+  'console.layerAdded': '[Document] added layer "{name}"',
+  'console.layerRemoved': '[Document] removed layer "{name}"',
+  'console.tilePlaced': '[Document] placed tile at ({x}, {y})',
+  'console.tileErased': '[Document] erased tile at ({x}, {y})',
+  'console.entityPlaced': '[Document] placed entity "{name}" at ({x}, {y})',
+  'console.colliderPlaced': '[Document] placed collider at ({x}, {y}) size {w}×{h}',
+
+  // Asset browser folders
+  'asset.folder.tilesets': 'tilesets',
+  'asset.folder.sprites': 'sprites',
+  'asset.folder.audio': 'audio',
+  'asset.folder.scripts': 'scripts',
+
+  // Properties panel — key labels + empty state
+  'properties.empty.title': 'No selection',
+  'properties.empty.hint': 'Select a tile, entity, or collider to inspect its properties.',
+  'properties.id': 'id',
+  'properties.type': 'type',
+  'properties.position': 'position',
+  'properties.size': 'size',
+  'properties.rotation': 'rotation',
+  'properties.layer': 'layer',
+  'properties.cells': 'cells',
+  'properties.entityCount': 'entities',
+  'properties.colliderCount': 'colliders',
+
+  // Palette — per-tile swatch labels (id 0 is the eraser)
+  'palette.entry.0': 'Eraser',
+  'palette.entry.1': 'Brick',
+  'palette.entry.2': 'Water',
+  'palette.entry.3': 'Grass',
+  'palette.entry.4': 'Sand',
+  'palette.entry.5': 'Stone',
+  'palette.entry.6': 'Wall',
+  'palette.entry.7': 'Wood',
+  'palette.entry.8': 'Snow',
+  'palette.entry.9': 'Concrete',
+  'palette.entry.10': 'Sandstone',
+  'palette.entry.11': 'Ice',
+  'palette.entry.12': 'Moss',
+  'palette.entry.13': 'Magic',
+  'palette.entry.14': 'Lava',
+  'palette.entry.15': 'Shadow',
 
   // Project slot
   'project.untitled': 'Untitled Project',
