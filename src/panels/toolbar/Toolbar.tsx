@@ -9,6 +9,7 @@
  * the persistence system.
  */
 
+import { useT } from '@core/i18n';
 import { useHistoryStore } from '@state/historyStore';
 import { useToolStore } from '@state/toolStore';
 
@@ -18,21 +19,22 @@ import type { ToolId } from '@state/toolStore';
 
 interface ToolButton {
   readonly id: ToolId | 'placeholder';
-  readonly label: string;
-  readonly shortcut?: string;
+  readonly labelKey: string;
+  readonly shortcut: string;
   readonly enabled: boolean;
 }
 
 const TOOLS: readonly ToolButton[] = [
-  { id: 'select', label: 'Select', shortcut: 'V', enabled: true },
-  { id: 'pan', label: 'Pan', shortcut: 'H', enabled: true },
-  { id: 'brush', label: 'Brush', shortcut: 'B', enabled: true },
-  { id: 'eraser', label: 'Eraser', shortcut: 'E', enabled: true },
-  { id: 'placeholder', label: 'Fill', shortcut: 'F', enabled: false },
-  { id: 'placeholder', label: 'Rect', shortcut: 'R', enabled: false },
+  { id: 'select', labelKey: 'toolbar.tool.select', shortcut: 'V', enabled: true },
+  { id: 'pan', labelKey: 'toolbar.tool.pan', shortcut: 'H', enabled: true },
+  { id: 'brush', labelKey: 'toolbar.tool.brush', shortcut: 'B', enabled: true },
+  { id: 'eraser', labelKey: 'toolbar.tool.eraser', shortcut: 'E', enabled: true },
+  { id: 'placeholder', labelKey: 'toolbar.tool.fill', shortcut: 'F', enabled: false },
+  { id: 'placeholder', labelKey: 'toolbar.tool.rect', shortcut: 'R', enabled: false },
 ];
 
 export function Toolbar() {
+  const t = useT();
   const activeToolId = useToolStore((s) => s.activeToolId);
   const setActiveTool = useToolStore((s) => s.setActiveTool);
 
@@ -42,22 +44,27 @@ export function Toolbar() {
   const redo = useHistoryStore((s) => s.redo);
 
   return (
-    <nav className={styles.toolbar} aria-label="Tools">
+    <nav className={styles.toolbar} aria-label={t('menu.tools')}>
       <div className={styles.group}>
         {TOOLS.map((tool) => {
           const isActive = tool.enabled && tool.id === activeToolId;
           const onClick = tool.enabled ? () => setActiveTool(tool.id as ToolId) : undefined;
+          const label = t(tool.labelKey);
           return (
             <button
-              key={tool.id + ':' + tool.label}
+              key={tool.id + ':' + tool.labelKey}
               type="button"
               className={styles.toolButton}
               data-active={isActive}
               disabled={!tool.enabled}
               onClick={onClick}
-              title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
+              title={
+                tool.shortcut
+                  ? t('toolbar.tool.shortcut', { name: label, shortcut: tool.shortcut })
+                  : label
+              }
             >
-              {tool.label}
+              {label}
             </button>
           );
         })}
@@ -67,20 +74,20 @@ export function Toolbar() {
         <button
           type="button"
           className={styles.actionButton}
-          title="Undo (Ctrl+Z)"
+          title={t('toolbar.undo.shortcut', { shortcut: 'Ctrl+Z' })}
           disabled={!canUndo}
           onClick={undo}
         >
-          Undo
+          {t('toolbar.undo')}
         </button>
         <button
           type="button"
           className={styles.actionButton}
-          title="Redo (Ctrl+Y)"
+          title={t('toolbar.redo.shortcut', { shortcut: 'Ctrl+Y' })}
           disabled={!canRedo}
           onClick={redo}
         >
-          Redo
+          {t('toolbar.redo')}
         </button>
       </div>
     </nav>

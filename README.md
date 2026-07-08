@@ -88,6 +88,8 @@ npm run typecheck    # TypeScript only
 npm run lint         # ESLint
 npm run lint:fix     # ESLint --fix
 npm run format       # Prettier write
+npm run test         # Vitest (unit tests, once per file)
+npm run test:watch   # Vitest watch mode
 ```
 
 ## Current Capabilities (v0.1)
@@ -100,6 +102,7 @@ npm run format       # Prettier write
 - ✅ Layer panel: add / delete / move / visibility / lock
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
 - ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
+- ✅ Editor UI: English / 简体中文 (MenuBar → View → Language)
 - ✅ Module-boundary ESLint enforcement
 
 ## Roadmap
@@ -122,6 +125,7 @@ npm run format       # Prettier write
 | 14   | Collision layer                                 | ⏳     |
 | 15   | JSON import / export                            | ✅     |
 | 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |
+| 17   | Editor UI i18n (English / 简体中文)             | ✅     |
 
 Future editor types (Dialogue, Animation, Quest, Inventory, Skill,
 Cutscene, Node, Localization, Timeline, Particle) plug into the existing

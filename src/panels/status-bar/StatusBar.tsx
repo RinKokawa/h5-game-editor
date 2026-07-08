@@ -6,6 +6,7 @@
  * selector so React only re-renders the changed span.
  */
 
+import { useT } from '@core/i18n';
 import { useDocumentStore } from '@state/documentStore';
 import { useHistoryStore } from '@state/historyStore';
 import { useSelectionStore } from '@state/selectionStore';
@@ -14,18 +15,21 @@ import { useViewStore } from '@state/viewStore';
 
 import styles from './StatusBar.module.css';
 
+import type { ToolId } from '@state/toolStore';
+
 const fmt = (n: number): string => {
   return Number.isInteger(n) ? n.toFixed(0) : n.toFixed(2).replace(/\.?0+$/, '');
 };
 
-const TOOL_LABEL: Record<string, string> = {
-  select: 'Select',
-  pan: 'Pan',
-  brush: 'Brush',
-  eraser: 'Eraser',
+const TOOL_LABEL_KEY: Record<ToolId, string> = {
+  select: 'statusbar.tool.select',
+  pan: 'statusbar.tool.pan',
+  brush: 'statusbar.tool.brush',
+  eraser: 'statusbar.tool.eraser',
 };
 
 export function StatusBar() {
+  const t = useT();
   const zoom = useViewStore((s) => s.zoom);
   const cursorScreen = useViewStore((s) => s.cursorScreen);
   const cursorWorld = useViewStore((s) => s.cursorWorld);
@@ -51,13 +55,19 @@ export function StatusBar() {
   }
 
   const zoomLabel = `${Math.round(zoom * 100)}%`;
-  const toolLabel = TOOL_LABEL[activeToolId] ?? activeToolId;
+  const toolLabel = t(TOOL_LABEL_KEY[activeToolId] ?? activeToolId);
   const canUndo = useHistoryStore((s) => s.canUndo);
   const canRedo = useHistoryStore((s) => s.canRedo);
-  const historyLabel = `${canUndo ? 'Undo' : '—'} / ${canRedo ? 'Redo' : '—'}`;
+  const historyLabel = `${canUndo ? t('toolbar.undo') : t('statusbar.selection.empty')} / ${
+    canRedo ? t('toolbar.redo') : t('statusbar.selection.empty')
+  }`;
   const selectionSize = useSelectionStore((s) => s.cells.size);
   const selectionLabel =
-    selectionSize === 0 ? '—' : selectionSize === 1 ? '1 cell' : `${selectionSize} cells`;
+    selectionSize === 0
+      ? t('statusbar.selection.empty')
+      : selectionSize === 1
+        ? t('statusbar.selection.one')
+        : t('statusbar.selection.other', { n: selectionSize });
 
   return (
     <footer className={styles.statusBar} role="status">
@@ -67,27 +77,33 @@ export function StatusBar() {
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
-      <span className={styles.item} title="Screen (canvas pixels)">
-        Scr {screen}
+      <span className={styles.item} title={t('statusbar.row.screen.title')}>
+        {t('statusbar.abbr.screen')} {screen}
       </span>
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
-      <span className={styles.item} title="World">
-        Wld {world}
+      <span className={styles.item} title={t('statusbar.row.world.title')}>
+        {t('statusbar.abbr.world')} {world}
       </span>
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
-      <span className={styles.item} title="Tile">
-        Tle {tile}
+      <span className={styles.item} title={t('statusbar.row.tile.title')}>
+        {t('statusbar.abbr.tile')} {tile}
       </span>
       <span className={styles.spacer} />
-      <span className={styles.item}>Zoom {zoomLabel}</span>
+      <span className={styles.item}>
+        {t('statusbar.row.zoom')} {zoomLabel}
+      </span>
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
-      <span className={styles.item} title="History" data-kind={canUndo || canRedo ? 'ok' : 'muted'}>
+      <span
+        className={styles.item}
+        title={t('statusbar.row.history.title')}
+        data-kind={canUndo || canRedo ? 'ok' : 'muted'}
+      >
         {historyLabel}
       </span>
       <span className={styles.separator} aria-hidden="true">
@@ -95,16 +111,16 @@ export function StatusBar() {
       </span>
       <span
         className={styles.item}
-        title="Selection"
+        title={t('statusbar.row.selection.title')}
         data-kind={selectionSize > 0 ? 'ok' : 'muted'}
       >
-        Sel {selectionLabel}
+        {t('statusbar.abbr.selection')} {selectionLabel}
       </span>
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
       <span className={styles.item} data-kind="ok">
-        Ready
+        {t('statusbar.row.ready')}
       </span>
     </footer>
   );

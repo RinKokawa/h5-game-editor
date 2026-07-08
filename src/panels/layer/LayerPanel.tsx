@@ -15,6 +15,7 @@
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
+import { useT } from '@core/i18n';
 import {
   AddTileLayerCommand,
   MoveLayerCommand,
@@ -29,13 +30,8 @@ import styles from './LayerPanel.module.css';
 
 import type { Layer } from '@editor/map/schema/layer';
 
-const LAYER_KIND_LABEL: Record<Layer['type'], string> = {
-  tile: 'Tile',
-  object: 'Object',
-  collision: 'Collision',
-};
-
 export function LayerPanel() {
+  const t = useT();
   const layers = useDocumentStore((s) => s.layers);
   const activeLayerId = useDocumentStore((s) => s.activeLayerId);
 
@@ -76,7 +72,7 @@ export function LayerPanel() {
           type="button"
           className={styles.toolbarButton}
           onClick={handleAddLayer}
-          title="Add layer"
+          title={t('layer.add')}
         >
           +
         </button>
@@ -85,7 +81,7 @@ export function LayerPanel() {
           className={styles.toolbarButton}
           onClick={() => handleRemoveLayer(activeLayerId)}
           disabled={layers.length <= 1}
-          title="Delete active layer"
+          title={t('layer.delete')}
         >
           −
         </button>
@@ -95,8 +91,8 @@ export function LayerPanel() {
           className={styles.toolbarButton}
           onClick={() => handleMove(activeLayerId, 'up')}
           disabled={!canMoveUp}
-          title="Move layer up"
-          aria-label="Move layer up"
+          title={t('layer.moveUp')}
+          aria-label={t('layer.moveUp')}
         >
           ↑
         </button>
@@ -105,8 +101,8 @@ export function LayerPanel() {
           className={styles.toolbarButton}
           onClick={() => handleMove(activeLayerId, 'down')}
           disabled={!canMoveDown}
-          title="Move layer down"
-          aria-label="Move layer down"
+          title={t('layer.moveDown')}
+          aria-label={t('layer.moveDown')}
         >
           ↓
         </button>
@@ -125,7 +121,7 @@ export function LayerPanel() {
                 type="button"
                 className={styles.toggle}
                 data-on={layer.visible}
-                aria-label={layer.visible ? 'Hide layer' : 'Show layer'}
+                aria-label={layer.visible ? t('layer.hide') : t('layer.show')}
                 aria-pressed={layer.visible}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -138,7 +134,7 @@ export function LayerPanel() {
                 type="button"
                 className={styles.toggle}
                 data-on={!layer.locked}
-                aria-label={layer.locked ? 'Unlock layer' : 'Lock layer'}
+                aria-label={layer.locked ? t('layer.unlock') : t('layer.lock')}
                 aria-pressed={!layer.locked}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -148,7 +144,7 @@ export function LayerPanel() {
                 {layer.locked ? '🔒' : '🔓'}
               </button>
               <span className={styles.name}>{layer.name}</span>
-              <span className={styles.kind}>{LAYER_KIND_LABEL[layer.type]}</span>
+              <span className={styles.kind}>{t(`layer.kind.${layer.type}`)}</span>
             </li>
           );
         })}

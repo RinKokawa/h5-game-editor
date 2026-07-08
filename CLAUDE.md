@@ -157,40 +157,22 @@ Do not bundle "while we're at it" changes into a step. Stay laser-focused.
 
 ## 13. Current step
 
-**Steps 11 / 12 / 15 / 16 — Selection, tools, persistence, shortcuts**
-— completed together (they share a selection / command / wiring spine).
+**Step 17 — Editor UI i18n** — completed. `core/i18n/` is a
+self-contained module: pure `translate()` (unit-tested), Zustand
+locale store, `useT` / `useLocale` / `setLocale` hooks, two bundles
+(`en`, `zh-CN`), localStorage persistence, `<html lang>` side effect
+on change. Every panel string is extracted to flat dot-separated
+keys (`menu.file.save`, `toolbar.tool.brush`, `statusbar.selection.one`,
+...). Missing keys warn once in dev, return the key in prod. Language
+switcher lives in `MenuBar → View → Language` with native-language
+labels. `EditorShell` uses `useT()` for dock titles and `t()` for
+imperative log strings.
 
-- **Step 11 — Selection & marquee.** `selectionStore` (Zustand) holds
-  `layerId`, `cells: Set<TileCoordKey>`, `marquee: {a,b} | null`, and
-  `hover: TileCoord | null`. `SelectionOverlay` is a PixiJS `Container`
-  re-drawn from the store on a rAF debounce. `SelectTool` produces
-  single-cell toggle (click) and marquee (drag); Space+left still
-  defers to the camera. Hover lives only in the store, never in React
-  state. `EraseSelectionCommand` (Composite) captures per-cell prev
-  entries so undo restores the selection and its tiles.
-- **Step 12 — Tools.** `PanTool` (left or middle drag), `EraserTool`
-  (BrushTool that always erases), `SelectTool`, `BrushTool`. All four
-  are instantiated in `EditorShell`; each gates on `activeToolId` so
-  the active one wins per gesture. Pan-vs-paint arbitration is
-  unchanged: Space+left defers to camera in every tool.
-- **Step 15 — JSON save/load.** `core/serialization` produces
-  `SerializedDocumentV1` (versioned, `version: 1`) and a reverse
-  `deserializeDocument`. Persistence lives in `systems/persistence/`
-  (`saveDocument` / `loadDocument` returning discriminated
-  `SaveOutcome` / `LoadOutcome`). `applyLoaded` resets the
-  DocumentStore, clears the selection, and clears command history
-  (loading is a fresh history). `PropertyBag` entries are dropped on
-  deserialize until a `PropertyValue` discriminator lands.
-- **Step 16 — Shortcuts.** `HistoryShortcuts` (Ctrl/Cmd+Z, Y, Shift+Z)
-  is joined by `DocumentIOShortcuts` (Ctrl/Cmd+S, Ctrl/Cmd+O) and
-  `SelectionShortcuts` (Delete/Backspace → EraseSelectionCommand,
-  Escape → clear selection). All three ignore `INPUT` / `TEXTAREA` /
-  `contentEditable` and modifier conflicts.
-
-Wiring pattern: `EditorShell` (in `app/`, the only layer that may
-import from both `systems/` and `panels/`) attaches the shortcut
-helpers and passes `fileActions` as a prop to `MenuBar` so the panel
-stays free of `systems/` dependencies.
+**Why the locale store lives in `core/i18n/`, not `state/`.**
+`core → types, shared, utils` only — `core/` cannot import from
+`state/` per ESLint. The store needs to be observable by code in
+this module, so it lives here. Zustand is a _library_, not a layer
+— it's used the same way `state/` uses it. Don't move it.
 
 Next: **Step 13 — Object layer + Entity placement** (entity schema,
 object layer in the Document, palette / inspector for entities,
@@ -208,6 +190,14 @@ PixiJS sprite for placed entities).
 - ❌ Adding a third-party state library to "solve" a Zustand quirk. → The
   quirk is a code smell; refactor.
 - ❌ Skipping `npm run lint` because "it'll be fine". It will not be fine.
+- ❌ Moving the i18n locale store into `state/` "to share state with
+  other panels". → It's already shared via `useT()` / `useLocale()`.
+  Putting it in `state/` would force `core/i18n/` to import `state/`,
+  breaking the ESLint boundary. Zustand is a library, not a layer.
+- ❌ Adding a third locale by editing `i18n.ts` and the switcher. →
+  Extend the `Locale` union in `core/i18n/types.ts`, add the bundle
+  to `bundles/`, and `AVAILABLE_LOCALES` is automatically picked up
+  by the switcher via `Object.entries(NATIVE_NAMES)`.
 
 ## 15. Questions to ask before adding a feature
 

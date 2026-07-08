@@ -10,22 +10,24 @@
  * active Tileset without contract changes.
  */
 
+import { useT } from '@core/i18n';
 import { DEFAULT_PALETTE } from '@editor/map/palette/defaultPalette';
 import { ERASER_TILE_ID, useBrushStore } from '@state/brushStore';
 
 import styles from './PalettePanel.module.css';
 
 export function PalettePanel() {
+  const t = useT();
   const activeTileId = useBrushStore((s) => s.activeTileId);
   const setActiveTile = useBrushStore((s) => s.setActiveTile);
 
   return (
     <div className={styles.palette}>
       <header className={styles.header}>
-        <span className={styles.title}>Default palette</span>
-        <span className={styles.hint}>Click a tile, then paint on the canvas</span>
+        <span className={styles.title}>{t('palette.title')}</span>
+        <span className={styles.hint}>{t('palette.hint')}</span>
       </header>
-      <div className={styles.swatchGrid} role="listbox" aria-label="Tile palette">
+      <div className={styles.swatchGrid} role="listbox" aria-label={t('palette.aria')}>
         {DEFAULT_PALETTE.map((entry) => {
           const isActive = entry.id === activeTileId;
           const isEraser = entry.id === ERASER_TILE_ID;

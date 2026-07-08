@@ -24,6 +24,14 @@
  *   - historyStore subscriber (Zustand mirror of canUndo/canRedo)
  *   - HistoryShortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
  *   - SelectionShortcuts (Delete/Backspace, Escape)
+ *
+ * Step 17 wires `core/i18n/`:
+ *   - fileActions passed to MenuBar use `labelKey` (bundle key)
+ *     so MenuBar owns all UI strings.
+ *   - PanelDock titles and console logs are translated via `useT()`.
+ *   - Imperative `t()` reads from the store synchronously for the
+ *     click handlers, so log messages always reflect the latest
+ *     locale without forcing EditorShell to subscribe.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -33,6 +41,7 @@ import { GridView } from '@canvas/grid/GridView';
 import { PixiRenderer } from '@canvas/renderer/PixiRenderer';
 import { SelectionOverlay } from '@canvas/selection/SelectionOverlay';
 import { TileLayerView } from '@canvas/tile-layer/TileLayerView';
+import { t as ti18n, useT } from '@core/i18n';
 import { BrushTool, EraserTool, PanTool, SelectTool } from '@editor/map/tools/index';
 import { CanvasArea } from '@layout/CanvasArea';
 import { PanelColumn } from '@layout/PanelColumn';
@@ -58,6 +67,7 @@ import { SelectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
 import styles from './EditorShell.module.css';
 
 export function EditorShell() {
+  const t = useT();
   const leftWidth = useLayoutStore((s) => s.leftWidth);
   const rightWidth = useLayoutStore((s) => s.rightWidth);
   const bottomHeight = useLayoutStore((s) => s.bottomHeight);
@@ -177,21 +187,21 @@ export function EditorShell() {
 
   const fileActions = [
     {
-      label: 'Save',
+      labelKey: 'menu.file.save',
       shortcut: 'Ctrl+S',
       onClick: () => {
         const outcome = saveDocument();
-        if (outcome.ok) console.info(`[DocumentIO] saved (${outcome.bytes} bytes)`);
-        else console.error('[DocumentIO] save failed:', outcome.error);
+        if (outcome.ok) console.info(ti18n('documentio.saved', { n: outcome.bytes }));
+        else console.error(ti18n('documentio.saveFailed', { error: outcome.error }));
       },
     },
     {
-      label: 'Load',
+      labelKey: 'menu.file.load',
       shortcut: 'Ctrl+O',
       onClick: () => {
         const outcome = loadDocument();
-        if (outcome.ok) console.info(`[DocumentIO] loaded (${outcome.layerCount} layers)`);
-        else console.warn('[DocumentIO] load failed:', outcome.error);
+        if (outcome.ok) console.info(ti18n('documentio.loaded', { n: outcome.layerCount }));
+        else console.warn(ti18n('documentio.loadFailed', { error: outcome.error }));
       },
     },
   ];
@@ -207,13 +217,13 @@ export function EditorShell() {
 
       <div className={styles.main}>
         <PanelColumn width={leftWidth} collapsed={leftCollapsed} side="left">
-          <PanelDock title="Palette">
+          <PanelDock title={t('dock.palette')}>
             <PalettePanel />
           </PanelDock>
-          <PanelDock title="Assets">
+          <PanelDock title={t('dock.assets')}>
             <AssetBrowserPanel />
           </PanelDock>
-          <PanelDock title="Layers">
+          <PanelDock title={t('dock.layers')}>
             <LayerPanel />
           </PanelDock>
         </PanelColumn>
@@ -231,10 +241,10 @@ export function EditorShell() {
         />
 
         <PanelColumn width={rightWidth} collapsed={rightCollapsed} side="right">
-          <PanelDock title="Inspector">
+          <PanelDock title={t('dock.inspector')}>
             <InspectorPanel />
           </PanelDock>
-          <PanelDock title="Properties">
+          <PanelDock title={t('dock.properties')}>
             <PropertiesPanel />
           </PanelDock>
         </PanelColumn>
@@ -250,7 +260,7 @@ export function EditorShell() {
         className={styles.bottomSlot}
         style={{ height: bottomCollapsed ? 28 : `${bottomHeight}px` }}
       >
-        <PanelDock title="Console" defaultOpen={!bottomCollapsed}>
+        <PanelDock title={t('dock.console')} defaultOpen={!bottomCollapsed}>
           <ConsolePanel />
         </PanelDock>
       </div>
