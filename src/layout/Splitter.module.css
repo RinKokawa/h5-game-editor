@@ -1,0 +1,29 @@
+.splitterVertical {
+  flex: 0 0 4px;
+  height: 100%;
+  cursor: col-resize;
+  background: var(--color-border);
+  transition: background-color 0.1s ease;
+  user-select: none;
+  touch-action: none;
+}
+
+.splitterVertical:hover,
+.splitterVertical:active {
+  background: var(--color-accent);
+}
+
+.splitterHorizontal {
+  flex: 0 0 4px;
+  width: 100%;
+  cursor: row-resize;
+  background: var(--color-border);
+  transition: background-color 0.1s ease;
+  user-select: none;
+  touch-action: none;
+}
+
+.splitterHorizontal:hover,
+.splitterHorizontal:active {
+  background: var(--color-accent);
+}

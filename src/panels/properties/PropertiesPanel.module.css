@@ -1,0 +1,33 @@
+.panel {
+  padding: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.key {
+  width: 40%;
+  text-align: left;
+  padding: 6px 8px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+}
+
+.value {
+  padding: 6px 8px;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}

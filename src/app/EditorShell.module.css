@@ -1,0 +1,38 @@
+.shell {
+  display: grid;
+  grid-template-rows: var(--size-menubar) var(--size-toolbar) 1fr auto var(--size-statusbar);
+  height: 100%;
+  width: 100%;
+  background: var(--color-bg);
+}
+
+.menuBarSlot,
+.toolbarSlot,
+.statusBarSlot {
+  flex: 0 0 auto;
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bottomSlot {
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.canvasHost {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.canvasHost > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

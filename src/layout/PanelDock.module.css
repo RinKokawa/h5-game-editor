@@ -1,0 +1,74 @@
+.dock {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dock:last-child {
+  border-bottom: none;
+}
+
+.dock[data-collapsed='true'] {
+  flex: 0 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  user-select: none;
+}
+
+.titleButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.titleButton:hover {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.caret {
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.title {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dock[data-collapsed='true'] .body {
+  display: none;
+}

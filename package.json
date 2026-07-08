@@ -1,0 +1,41 @@
+{
+  "name": "h5-game-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A long-term maintainable H5 game editor framework built with React, PixiJS, and Zustand.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" \"*.{ts,tsx,js,cjs,mjs,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" \"*.{ts,tsx,js,cjs,mjs,json,md}\""
+  },
+  "dependencies": {
+    "pixi.js": "^8.6.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "eslint": "^9.13.0",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.12",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.0",
+    "typescript": "~5.6.0",
+    "typescript-eslint": "^8.10.0",
+    "vite": "^6.0.0"
+  }
+}

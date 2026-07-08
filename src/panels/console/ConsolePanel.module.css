@@ -1,0 +1,45 @@
+.panel {
+  height: 100%;
+  background: #1a1a1a;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow: auto;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.line {
+  display: flex;
+  gap: 8px;
+  padding: 2px 12px;
+  color: var(--color-text);
+}
+
+.line:hover {
+  background: var(--color-bg-elevated);
+}
+
+.level {
+  flex: 0 0 48px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+
+.line[data-level='warn'] .level {
+  color: #d7ba7d;
+}
+
+.line[data-level='error'] .level {
+  color: var(--color-danger);
+}
+
+.text {
+  flex: 1;
+}

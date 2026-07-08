@@ -1,0 +1,37 @@
+.browser {
+  padding: 4px 0;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--color-bg-elevated);
+}
+
+.icon {
+  color: var(--color-text-muted);
+  width: 12px;
+}
+
+.name {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
