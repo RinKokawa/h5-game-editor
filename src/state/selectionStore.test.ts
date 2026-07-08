@@ -19,7 +19,6 @@ const resetStore = (): void => {
   useSelectionStore.setState({
     selection: null,
     marquee: null,
-    hover: null,
   });
 };
 
@@ -157,17 +156,14 @@ describe('selectionStore — clear()', () => {
     resetStore();
   });
 
-  it('clears tile selection, marquee, and hover', () => {
+  it('clears tile selection and marquee', () => {
     const layerId = asLayerId('layer.tile.1');
     const sel = useSelectionStore.getState();
     sel.beginMarquee(layerId, { x: 0, y: 0 });
-    sel.setHover({ x: 5, y: 5 });
     sel.endMarquee();
-    sel.setHover({ x: 5, y: 5 });
     sel.clear();
     const out = useSelectionStore.getState();
     expect(out.selection).toBeNull();
     expect(out.marquee).toBeNull();
-    expect(out.hover).toBeNull();
   });
 });

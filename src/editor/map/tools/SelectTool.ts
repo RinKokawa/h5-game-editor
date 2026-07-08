@@ -64,7 +64,6 @@ export class SelectTool {
     this.dragging = false;
     this.lastPointerEvent = null;
     this.pointerDownWorld = null;
-    useSelectionStore.getState().setHover(null);
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
@@ -92,8 +91,6 @@ export class SelectTool {
     const world = this.eventToWorld(event);
     if (!world) return;
     this.lastPointerEvent = event;
-    const doc = useDocumentStore.getState();
-    useSelectionStore.getState().setHover(worldToTile(world, doc.tileSize));
 
     if (this.dragging) {
       const layer = this.activeLayer();
@@ -142,7 +139,8 @@ export class SelectTool {
   };
 
   private readonly onPointerLeave = (): void => {
-    useSelectionStore.getState().setHover(null);
+    // Hover is owned by viewStore via Camera's pointerleave handler —
+    // nothing to clear here.
   };
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {

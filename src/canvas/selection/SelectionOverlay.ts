@@ -1,8 +1,8 @@
 /**
- * SelectionOverlay — draws selection rectangles and marquee preview
- * over the world container.
+ * SelectionOverlay — draws selection rectangles, marquee preview,
+ * and the cursor hover cell over the world container.
  *
- * Three distinct visuals:
+ * Four distinct visuals:
  *   - Tile cells: translucent fill + 1px outline per selected cell.
  *   - Non-tile selection (entity / collider): a 1.5px outline around
  *     the world-pixel bounds, plus a tiny corner-mark to distinguish
@@ -10,13 +10,15 @@
  *     so the user reads "selected" regardless of object kind.
  *   - Marquee outline: a solid rect over the in-progress drag preview.
  *     (Tile-only in v0.1 — SelectTool gates on layer type.)
+ *   - Hover cell: a single-cell outline at the cursor's tile coord,
+ *     independent of the active tool. Driven from
+ *     `viewStore.cursorWorld + documentStore.tileSize` so it works
+ *     for Brush/Eraser/Entity/Collider as well as Select.
  *
- * Hover is tile-only; entity / collider hover lands with the editor
- * extension.
- *
- * Subscribes to selectionStore AND documentStore (entity / collider
- * position info). Redraws are coalesced via requestAnimationFrame,
- * same pattern as GridView / TileLayerView.
+ * Subscribes to selectionStore (selection + marquee), documentStore
+ * (entity / collider position info + tile size), and viewStore
+ * (cursor world position). Redraws are coalesced via
+ * requestAnimationFrame, same pattern as GridView / TileLayerView.
  *
  * Does NOT consume pointer events.
  */
@@ -26,6 +28,7 @@ import { Container, Graphics } from 'pixi.js';
 import { decodeTileCoord } from '@editor/map/schema/tile';
 import { useDocumentStore } from '@state/documentStore';
 import { useSelectionStore } from '@state/selectionStore';
+import { useViewStore } from '@state/viewStore';
 
 import type { TileCoord } from '@editor/map/schema/geometry';
 
@@ -71,6 +74,9 @@ export class SelectionOverlay {
     // touching the selection store. Subscribe to the document too so
     // the outline tracks.
     this.unsubscribes.push(useDocumentStore.subscribe(() => this.scheduleRedraw()));
+    // Hover cell follows the cursor, which is published by Camera
+    // regardless of the active tool.
+    this.unsubscribes.push(useViewStore.subscribe(() => this.scheduleRedraw()));
     this.scheduleRedraw();
   }
 
@@ -100,8 +106,9 @@ export class SelectionOverlay {
   private draw(): void {
     if (this.destroyed) return;
 
-    const { selection, marquee, hover } = useSelectionStore.getState();
+    const { selection, marquee } = useSelectionStore.getState();
     const doc = useDocumentStore.getState();
+    const cursorWorld = useViewStore.getState().cursorWorld;
     const tileSize = this.tileSize;
     const g = this.graphics;
     g.clear();
@@ -149,15 +156,34 @@ export class SelectionOverlay {
       });
     }
 
-    if (hover) {
-      g.rect(hover.x * tileSize, hover.y * tileSize, tileSize, tileSize).stroke({
-        color: HOVER_OUTLINE_COLOR,
-        width: 1,
-        alpha: HOVER_OUTLINE_ALPHA,
-      });
+    // Hover cell — derived from viewStore's cursorWorld plus the
+    // current tileSize. Independent of the active tool: Brush and
+    // Eraser users get the same indicator as Select users. Clamp to
+    // the map bounds so the cell doesn't draw outside the playable
+    // area when the cursor is in the canvas gutter.
+    if (cursorWorld && tileSize > 0) {
+      const { width, height } = doc.mapSize;
+      if (
+        cursorWorld.x >= 0 &&
+        cursorWorld.y >= 0 &&
+        cursorWorld.x < width &&
+        cursorWorld.y < height
+      ) {
+        const hover = worldToTile(cursorWorld, tileSize);
+        g.rect(hover.x * tileSize, hover.y * tileSize, tileSize, tileSize).stroke({
+          color: HOVER_OUTLINE_COLOR,
+          width: 1,
+          alpha: HOVER_OUTLINE_ALPHA,
+        });
+      }
     }
   }
 }
+
+const worldToTile = (world: { x: number; y: number }, tileSize: number): TileCoord => ({
+  x: Math.floor(world.x / tileSize),
+  y: Math.floor(world.y / tileSize),
+});
 
 const drawCornerMarks = (g: Graphics, x: number, y: number, w: number, h: number): void => {
   const m = 4;

@@ -13,8 +13,11 @@
  * on Collision layers).
  *
  * Marquee is tile-only in v0.1 (`beginMarquee`/`endMarquee` only
- * ever touch `selection.cells`); hover is also tile-only. Future
- * kinds can extend with their own marquee/hover protocols.
+ * ever touch `selection.cells`). Hover is NOT stored here — it's a
+ * view-only cursor indicator rendered by `SelectionOverlay` from
+ * `viewStore.cursorWorld + documentStore.tileSize`. That keeps the
+ * selection store independent of the active tool: hover works for
+ * every tool, not just Select.
  *
  * This store is view state — it does not affect the Document. It
  * triggers React re-renders for any panel that reads it.
@@ -55,9 +58,6 @@ export type Selection = TileSelection | EntitySelection | ColliderSelection;
 export interface SelectionState {
   readonly selection: Selection | null;
   readonly marquee: MarqueeRect | null;
-  readonly hover: TileCoord | null;
-
-  readonly setHover: (coord: TileCoord | null) => void;
 
   // Tile marquee — drag-preview selection. Only valid while the user
   // is dragging on a Tile layer (SelectTool gates on layer type).
@@ -85,9 +85,6 @@ export interface SelectionState {
 export const useSelectionStore = create<SelectionState>((set, get) => ({
   selection: null,
   marquee: null,
-  hover: null,
-
-  setHover: (coord) => set({ hover: coord }),
 
   beginMarquee: (layerId, start) => {
     set({
@@ -166,7 +163,7 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
   setColliderSelection: (colliderId, layerId) =>
     set({ selection: { kind: 'collider', colliderId, layerId } }),
 
-  clear: () => set({ selection: null, marquee: null, hover: null }),
+  clear: () => set({ selection: null, marquee: null }),
 }));
 
 /** Build the inclusive list of cells inside the rect spanned by `a` and `b`. */
