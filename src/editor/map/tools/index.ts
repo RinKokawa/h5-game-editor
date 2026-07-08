@@ -1,8 +1,13 @@
 /**
  * Map editor: Tools.
  *
- * Tools generate Commands in response to user input. They never mutate the
- * Document directly. Each tool implements activate/deactivate/onPointer* and
- * owns its own cursor / overlay visuals.
+ * Each tool owns its own DOM listeners and only acts when its id
+ * matches `toolStore.activeToolId`. Tools never mutate the
+ * Document directly — they build Commands and dispatch them via
+ * the CommandBus.
  */
-export {};
+
+export { BrushTool } from './BrushTool';
+export { EraserTool } from './EraserTool';
+export { PanTool } from './PanTool';
+export { SelectTool } from './SelectTool';

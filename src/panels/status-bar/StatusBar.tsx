@@ -8,6 +8,7 @@
 
 import { useDocumentStore } from '@state/documentStore';
 import { useHistoryStore } from '@state/historyStore';
+import { useSelectionStore } from '@state/selectionStore';
 import { useToolStore } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
 
@@ -54,6 +55,9 @@ export function StatusBar() {
   const canUndo = useHistoryStore((s) => s.canUndo);
   const canRedo = useHistoryStore((s) => s.canRedo);
   const historyLabel = `${canUndo ? 'Undo' : '—'} / ${canRedo ? 'Redo' : '—'}`;
+  const selectionSize = useSelectionStore((s) => s.cells.size);
+  const selectionLabel =
+    selectionSize === 0 ? '—' : selectionSize === 1 ? '1 cell' : `${selectionSize} cells`;
 
   return (
     <footer className={styles.statusBar} role="status">
@@ -85,6 +89,16 @@ export function StatusBar() {
       </span>
       <span className={styles.item} title="History" data-kind={canUndo || canRedo ? 'ok' : 'muted'}>
         {historyLabel}
+      </span>
+      <span className={styles.separator} aria-hidden="true">
+        |
+      </span>
+      <span
+        className={styles.item}
+        title="Selection"
+        data-kind={selectionSize > 0 ? 'ok' : 'muted'}
+      >
+        Sel {selectionLabel}
       </span>
       <span className={styles.separator} aria-hidden="true">
         |

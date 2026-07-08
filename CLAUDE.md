@@ -157,21 +157,44 @@ Do not bundle "while we're at it" changes into a step. Stay laser-focused.
 
 ## 13. Current step
 
-**Step 10: Command system + Undo/Redo** — completed. Every Document
-mutation now flows through `commandBus.execute(Command)`. Concrete
-Commands live under `editor/map/commands/` (Place/Erase tile, Add/Remove
-Layer, Move Layer, Set visible/locked). `CompositeCommand` bundles a
-single brush stroke into one undo unit. `HistoryShortcuts` wires
-Ctrl/Cmd+Z / Y / Shift+Z; `historyStore` mirrors `canUndo / canRedo`
-into Zustand for React.
+**Steps 11 / 12 / 15 / 16 — Selection, tools, persistence, shortcuts**
+— completed together (they share a selection / command / wiring spine).
 
-DocumentStore is now pure data — all mutating actions were removed in
-favour of primitive setters (`setTile`, `addLayer`, ...) called only by
-`DocumentService`. `DocumentService` is the sole bridge from `core/`
-to `state/`.
+- **Step 11 — Selection & marquee.** `selectionStore` (Zustand) holds
+  `layerId`, `cells: Set<TileCoordKey>`, `marquee: {a,b} | null`, and
+  `hover: TileCoord | null`. `SelectionOverlay` is a PixiJS `Container`
+  re-drawn from the store on a rAF debounce. `SelectTool` produces
+  single-cell toggle (click) and marquee (drag); Space+left still
+  defers to the camera. Hover lives only in the store, never in React
+  state. `EraseSelectionCommand` (Composite) captures per-cell prev
+  entries so undo restores the selection and its tiles.
+- **Step 12 — Tools.** `PanTool` (left or middle drag), `EraserTool`
+  (BrushTool that always erases), `SelectTool`, `BrushTool`. All four
+  are instantiated in `EditorShell`; each gates on `activeToolId` so
+  the active one wins per gesture. Pan-vs-paint arbitration is
+  unchanged: Space+left defers to camera in every tool.
+- **Step 15 — JSON save/load.** `core/serialization` produces
+  `SerializedDocumentV1` (versioned, `version: 1`) and a reverse
+  `deserializeDocument`. Persistence lives in `systems/persistence/`
+  (`saveDocument` / `loadDocument` returning discriminated
+  `SaveOutcome` / `LoadOutcome`). `applyLoaded` resets the
+  DocumentStore, clears the selection, and clears command history
+  (loading is a fresh history). `PropertyBag` entries are dropped on
+  deserialize until a `PropertyValue` discriminator lands.
+- **Step 16 — Shortcuts.** `HistoryShortcuts` (Ctrl/Cmd+Z, Y, Shift+Z)
+  is joined by `DocumentIOShortcuts` (Ctrl/Cmd+S, Ctrl/Cmd+O) and
+  `SelectionShortcuts` (Delete/Backspace → EraseSelectionCommand,
+  Escape → clear selection). All three ignore `INPUT` / `TEXTAREA` /
+  `contentEditable` and modifier conflicts.
 
-Next: **Step 11 — Selection & marquee** (single-cell + rectangular
-selection, rectangular eraser/clone/fill built on top of the marquee).
+Wiring pattern: `EditorShell` (in `app/`, the only layer that may
+import from both `systems/` and `panels/`) attaches the shortcut
+helpers and passes `fileActions` as a prop to `MenuBar` so the panel
+stays free of `systems/` dependencies.
+
+Next: **Step 13 — Object layer + Entity placement** (entity schema,
+object layer in the Document, palette / inspector for entities,
+PixiJS sprite for placed entities).
 
 ## 14. Common pitfalls to avoid
 

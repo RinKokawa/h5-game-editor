@@ -1,7 +1,14 @@
 /**
  * Core: Serialization framework.
  *
- * Strategy pattern: pluggable formats (JSON, .tmx, binary) register against
- * the Extension Registry. Document <-> wire format conversion happens here.
+ * Concrete serializers live alongside the Document schema (the
+ * canonical place for shape conversion). This barrel re-exports
+ * the JSON serializer used by the v0.1 editor.
  */
-export {};
+
+export { serializeDocument, deserializeDocument } from './documentSerializer';
+export type {
+  SerializedDocumentV1,
+  SerializedDocumentInput,
+  LoadedDocument,
+} from './documentSerializer';

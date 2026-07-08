@@ -16,9 +16,14 @@
  * Splitters write directly to the layout store. Panels are dumb — they
  * only render whatever their parent gives them.
  *
- * Step 10 wires up the cross-cutting subsystems:
+ * Step 11+ adds SelectionOverlay and instantiates all four tools
+ * (Select, Pan, Brush, Eraser). Each tool checks the active tool id
+ * before responding to events; only the active one acts.
+ *
+ * Step 16 cross-cutting systems:
  *   - historyStore subscriber (Zustand mirror of canUndo/canRedo)
  *   - HistoryShortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
+ *   - SelectionShortcuts (Delete/Backspace, Escape)
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -26,8 +31,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Camera } from '@canvas/camera/Camera';
 import { GridView } from '@canvas/grid/GridView';
 import { PixiRenderer } from '@canvas/renderer/PixiRenderer';
+import { SelectionOverlay } from '@canvas/selection/SelectionOverlay';
 import { TileLayerView } from '@canvas/tile-layer/TileLayerView';
-import { BrushTool } from '@editor/map/tools/BrushTool';
+import { BrushTool, EraserTool, PanTool, SelectTool } from '@editor/map/tools/index';
 import { CanvasArea } from '@layout/CanvasArea';
 import { PanelColumn } from '@layout/PanelColumn';
 import { PanelDock } from '@layout/PanelDock';
@@ -41,9 +47,13 @@ import { PalettePanel } from '@panels/palette/PalettePanel';
 import { PropertiesPanel } from '@panels/properties/PropertiesPanel';
 import { StatusBar } from '@panels/status-bar/StatusBar';
 import { Toolbar } from '@panels/toolbar/Toolbar';
+import { useDocumentStore } from '@state/documentStore';
 import { installHistorySubscriber, uninstallHistorySubscriber } from '@state/historyStore';
 import { useLayoutStore } from '@state/layoutStore';
+import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
+import { DocumentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
 import { HistoryShortcuts } from '@systems/shortcut/HistoryShortcuts';
+import { SelectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
 
 import styles from './EditorShell.module.css';
 
@@ -64,30 +74,36 @@ export function EditorShell() {
   const cameraRef = useRef<Camera | null>(null);
   const gridRef = useRef<GridView | null>(null);
   const tileLayerRef = useRef<TileLayerView | null>(null);
+  const selectionRef = useRef<SelectionOverlay | null>(null);
   const brushToolRef = useRef<BrushTool | null>(null);
+  const eraserToolRef = useRef<EraserTool | null>(null);
+  const panToolRef = useRef<PanTool | null>(null);
+  const selectToolRef = useRef<SelectTool | null>(null);
 
-  // Step 10 cross-cutting systems. The history subscriber mirrors the
-  // CommandBus into Zustand so React can render Undo/Redo button state;
-  // HistoryShortcuts maps Ctrl/Cmd+Z/Y to CommandBus.undo/redo.
   useEffect(() => {
     installHistorySubscriber();
-    const shortcuts = new HistoryShortcuts();
-    shortcuts.attach();
+    const historyShortcuts = new HistoryShortcuts();
+    const selectionShortcuts = new SelectionShortcuts();
+    const documentIOShortcuts = new DocumentIOShortcuts();
+    historyShortcuts.attach();
+    selectionShortcuts.attach();
+    documentIOShortcuts.attach();
     return () => {
-      shortcuts.detach();
+      historyShortcuts.detach();
+      selectionShortcuts.detach();
+      documentIOShortcuts.detach();
       uninstallHistorySubscriber();
     };
   }, []);
 
   // Mount the PixiJS renderer + Camera + GridView + TileLayerView +
-  // BrushTool. The async `start()` is safe under React StrictMode: if
-  // destroy() fires before init resolves, the partially-built
-  // application is torn down and the Camera (and everything downstream)
-  // is never constructed.
+  // SelectionOverlay + all four tools. The async `start()` is safe
+  // under React StrictMode: if destroy() fires before init resolves,
+  // the partially-built application is torn down and the Camera (and
+  // everything downstream) is never constructed.
   //
-  // Teardown order: views detach from worldContainer before Camera
-  // destroys it; BrushTool removes DOM listeners before the canvas is
-  // gone.
+  // Teardown order: tools remove DOM listeners before the canvas is
+  // gone; views detach from worldContainer before Camera destroys it.
   useEffect(() => {
     const host = canvasHostRef.current;
     if (!host) return;
@@ -105,9 +121,18 @@ export function EditorShell() {
 
         gridRef.current = new GridView(renderer, camera.worldContainer);
         tileLayerRef.current = new TileLayerView(camera.worldContainer);
+        selectionRef.current = new SelectionOverlay(
+          camera.worldContainer,
+          () => useDocumentStore.getState().tileSize,
+        );
 
         const canvas = renderer.getCanvas();
-        if (canvas) brushToolRef.current = new BrushTool(canvas);
+        if (canvas) {
+          brushToolRef.current = new BrushTool(canvas);
+          eraserToolRef.current = new EraserTool(canvas);
+          panToolRef.current = new PanTool(canvas);
+          selectToolRef.current = new SelectTool(canvas);
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -118,6 +143,14 @@ export function EditorShell() {
       cancelled = true;
       brushToolRef.current?.destroy();
       brushToolRef.current = null;
+      eraserToolRef.current?.destroy();
+      eraserToolRef.current = null;
+      panToolRef.current?.destroy();
+      panToolRef.current = null;
+      selectToolRef.current?.destroy();
+      selectToolRef.current = null;
+      selectionRef.current?.destroy();
+      selectionRef.current = null;
       tileLayerRef.current?.destroy();
       tileLayerRef.current = null;
       gridRef.current?.destroy();
@@ -142,10 +175,31 @@ export function EditorShell() {
     [bottomHeight, setBottomHeight],
   );
 
+  const fileActions = [
+    {
+      label: 'Save',
+      shortcut: 'Ctrl+S',
+      onClick: () => {
+        const outcome = saveDocument();
+        if (outcome.ok) console.info(`[DocumentIO] saved (${outcome.bytes} bytes)`);
+        else console.error('[DocumentIO] save failed:', outcome.error);
+      },
+    },
+    {
+      label: 'Load',
+      shortcut: 'Ctrl+O',
+      onClick: () => {
+        const outcome = loadDocument();
+        if (outcome.ok) console.info(`[DocumentIO] loaded (${outcome.layerCount} layers)`);
+        else console.warn('[DocumentIO] load failed:', outcome.error);
+      },
+    },
+  ];
+
   return (
     <div className={styles.shell}>
       <div className={styles.menuBarSlot}>
-        <MenuBar />
+        <MenuBar fileActions={fileActions} />
       </div>
       <div className={styles.toolbarSlot}>
         <Toolbar />

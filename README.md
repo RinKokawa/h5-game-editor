@@ -95,8 +95,11 @@ npm run format       # Prettier write
 - ✅ Vite + React 19 + TypeScript strict
 - ✅ PixiJS renderer + camera + grid + tile layers
 - ✅ Brush tool: paint / erase with drag-to-paint
+- ✅ Select / Pan / Eraser / Brush tools (V / H / B / E)
+- ✅ Selection: single-cell click, marquee, hover, Delete-to-erase
 - ✅ Layer panel: add / delete / move / visibility / lock
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
+- ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
 - ✅ Module-boundary ESLint enforcement
 
 ## Roadmap
@@ -113,12 +116,12 @@ npm run format       # Prettier write
 | 8    | Tile drawing                                    | ✅     |
 | 9    | Layers (visibility, lock, reorder)              | ✅     |
 | 10   | Command system + Undo/Redo                      | ✅     |
-| 11   | Selection & marquee                             | ⏳     |
-| 12   | Tools (Brush, Eraser, Select, Pan)              | ⏳     |
+| 11   | Selection & marquee                             | ✅     |
+| 12   | Tools (Brush, Eraser, Select, Pan)              | ✅     |
 | 13   | Object layer + Entity placement                 | ⏳     |
 | 14   | Collision layer                                 | ⏳     |
-| 15   | JSON import / export                            | ⏳     |
-| 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ⏳     |
+| 15   | JSON import / export                            | ✅     |
+| 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |
 
 Future editor types (Dialogue, Animation, Quest, Inventory, Skill,
 Cutscene, Node, Localization, Timeline, Particle) plug into the existing

@@ -1,11 +1,15 @@
 /**
- * Toolbar — quick-access buttons for the active tool.
+ * Toolbar — quick-access buttons for the active tool and Undo/Redo.
  *
- * Tools are bound to `toolStore.activeToolId`. Clicking a tool button
- * dispatches `setActiveTool(<id>)`. Only tools that exist in
- * `ToolId` are wired; the rest remain visual placeholders.
+ * Tools are bound to `toolStore.activeToolId`. Clicking a tool
+ * button dispatches `setActiveTool(<id>)`. Undo/Redo read
+ * `historyStore.canUndo` / `canRedo` so they disable themselves
+ * when the corresponding stack is empty. Save/Load live in the
+ * File menu (see MenuBar) so this panel doesn't have to depend on
+ * the persistence system.
  */
 
+import { useHistoryStore } from '@state/historyStore';
 import { useToolStore } from '@state/toolStore';
 
 import styles from './Toolbar.module.css';
@@ -20,10 +24,10 @@ interface ToolButton {
 }
 
 const TOOLS: readonly ToolButton[] = [
-  { id: 'select', label: 'Select', shortcut: 'V', enabled: false },
-  { id: 'pan', label: 'Pan', shortcut: 'H', enabled: false },
+  { id: 'select', label: 'Select', shortcut: 'V', enabled: true },
+  { id: 'pan', label: 'Pan', shortcut: 'H', enabled: true },
   { id: 'brush', label: 'Brush', shortcut: 'B', enabled: true },
-  { id: 'eraser', label: 'Eraser', shortcut: 'E', enabled: false },
+  { id: 'eraser', label: 'Eraser', shortcut: 'E', enabled: true },
   { id: 'placeholder', label: 'Fill', shortcut: 'F', enabled: false },
   { id: 'placeholder', label: 'Rect', shortcut: 'R', enabled: false },
 ];
@@ -31,6 +35,11 @@ const TOOLS: readonly ToolButton[] = [
 export function Toolbar() {
   const activeToolId = useToolStore((s) => s.activeToolId);
   const setActiveTool = useToolStore((s) => s.setActiveTool);
+
+  const canUndo = useHistoryStore((s) => s.canUndo);
+  const canRedo = useHistoryStore((s) => s.canRedo);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
 
   return (
     <nav className={styles.toolbar} aria-label="Tools">
@@ -55,13 +64,22 @@ export function Toolbar() {
       </div>
       <div className={styles.spacer} />
       <div className={styles.group}>
-        <button type="button" className={styles.actionButton} title="Save (Ctrl+S)" disabled>
-          Save
-        </button>
-        <button type="button" className={styles.actionButton} title="Undo (Ctrl+Z)" disabled>
+        <button
+          type="button"
+          className={styles.actionButton}
+          title="Undo (Ctrl+Z)"
+          disabled={!canUndo}
+          onClick={undo}
+        >
           Undo
         </button>
-        <button type="button" className={styles.actionButton} title="Redo (Ctrl+Y)" disabled>
+        <button
+          type="button"
+          className={styles.actionButton}
+          title="Redo (Ctrl+Y)"
+          disabled={!canRedo}
+          onClick={redo}
+        >
           Redo
         </button>
       </div>

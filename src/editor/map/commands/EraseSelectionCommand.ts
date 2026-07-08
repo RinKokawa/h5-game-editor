@@ -1,0 +1,69 @@
+/**
+ * EraseSelectionCommand — wipe every tile in the current selection.
+ *
+ * At `do` time: snapshot each selected cell's entry, dispatch an
+ * erase for each, then clear the selection.
+ *
+ * At `undo` time: restore each captured entry and re-select the
+ * same cells so the user can see what came back.
+ *
+ * If the selection is empty at `do`, `isEmpty()` returns true and
+ * callers should skip dispatching.
+ */
+
+import { decodeTileCoord } from '@editor/map/schema/tile';
+import { useSelectionStore } from '@state/selectionStore';
+
+import { EraseTileCommand } from './EraseTileCommand';
+import { PlaceTileCommand } from './PlaceTileCommand';
+
+import type { Command } from '@core/command/Command';
+import type { DocumentService } from '@core/document/DocumentService';
+import type { TileLayerEntry } from '@core/document/DocumentService';
+import type { TileCoord } from '@editor/map/schema/geometry';
+import type { LayerId } from '@editor/map/schema/ids';
+
+export class EraseSelectionCommand implements Command {
+  readonly kind = 'selection:erase';
+
+  private captured: Array<{ layerId: LayerId; coord: TileCoord; entry: TileLayerEntry }> = [];
+  private prevLayer: LayerId | null = null;
+  private prevCells: TileCoord[] = [];
+
+  isEmpty(): boolean {
+    const s = useSelectionStore.getState();
+    return s.layerId === null || s.cells.size === 0;
+  }
+
+  do(service: DocumentService): void {
+    const sel = useSelectionStore.getState();
+    this.prevLayer = sel.layerId;
+    this.prevCells = [];
+    for (const key of sel.cells) this.prevCells.push(decodeTileCoord(key));
+
+    if (sel.layerId === null || sel.cells.size === 0) return;
+
+    const layerId = sel.layerId;
+    this.captured = [];
+    for (const key of sel.cells) {
+      const coord = decodeTileCoord(key);
+      const entry = service.getTile(layerId, coord);
+      if (entry === null) continue;
+      this.captured.push({ layerId, coord, entry });
+      new EraseTileCommand(layerId, coord).do(service);
+    }
+
+    useSelectionStore.getState().clear();
+  }
+
+  undo(service: DocumentService): void {
+    for (let i = this.captured.length - 1; i >= 0; i--) {
+      const c = this.captured[i];
+      if (!c) continue;
+      new PlaceTileCommand(c.layerId, c.coord, c.entry).undo(service);
+    }
+    if (this.prevLayer !== null) {
+      useSelectionStore.getState().setSelection(this.prevLayer, this.prevCells);
+    }
+  }
+}

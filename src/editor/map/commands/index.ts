@@ -8,6 +8,7 @@
 
 export { PlaceTileCommand, placeTile } from './PlaceTileCommand';
 export { EraseTileCommand } from './EraseTileCommand';
+export { EraseSelectionCommand } from './EraseSelectionCommand';
 export { AddTileLayerCommand } from './AddTileLayerCommand';
 export { RemoveLayerCommand } from './RemoveLayerCommand';
 export { SetLayerVisibleCommand, toggleLayerVisible } from './SetLayerVisibleCommand';
