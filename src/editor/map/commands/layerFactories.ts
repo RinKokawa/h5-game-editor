@@ -1,19 +1,18 @@
 /**
  * Factory helpers for building common Layer values.
  *
- * Used by AddTileLayerCommand — the panel calls into here to mint
- * a fresh TileLayer with a unique id and a sensible default name.
+ * Used by Add{LayerKind}LayerCommand — the panel calls into here to
+ * mint a fresh layer with a unique id and a sensible default name.
  */
 
 import { asLayerId } from '@editor/map/schema/ids';
 
-import type { LayerId } from '@editor/map/schema/ids';
-import type { TileCoordKey } from '@editor/map/schema/ids';
-import type { Layer, TileLayer } from '@editor/map/schema/layer';
+import type { EntityId, LayerId, TileCoordKey } from '@editor/map/schema/ids';
+import type { Layer, ObjectLayer, TileLayer } from '@editor/map/schema/layer';
 import type { PlacedTile } from '@editor/map/schema/tile';
 
-const newLayerId = (): LayerId =>
-  asLayerId(`layer.tile.${Math.random().toString(36).slice(2, 10)}`);
+const newLayerId = (kind: 'tile' | 'object' | 'collision'): LayerId =>
+  asLayerId(`layer.${kind}.${Math.random().toString(36).slice(2, 10)}`);
 
 const newLayerName = (existing: ReadonlyArray<Layer>): string => {
   let n = existing.length + 1;
@@ -22,7 +21,7 @@ const newLayerName = (existing: ReadonlyArray<Layer>): string => {
 };
 
 export const createTileLayer = (existing: ReadonlyArray<Layer>, name?: string): TileLayer => ({
-  id: newLayerId(),
+  id: newLayerId('tile'),
   type: 'tile',
   name: name ?? newLayerName(existing),
   visible: true,
@@ -30,4 +29,15 @@ export const createTileLayer = (existing: ReadonlyArray<Layer>, name?: string): 
   opacity: 1,
   properties: { entries: new Map() },
   data: { tiles: new Map<TileCoordKey, PlacedTile>() },
+});
+
+export const createObjectLayer = (existing: ReadonlyArray<Layer>, name?: string): ObjectLayer => ({
+  id: newLayerId('object'),
+  type: 'object',
+  name: name ?? newLayerName(existing),
+  visible: true,
+  locked: false,
+  opacity: 1,
+  properties: { entries: new Map() },
+  data: { entityOrder: [] as readonly EntityId[] },
 });

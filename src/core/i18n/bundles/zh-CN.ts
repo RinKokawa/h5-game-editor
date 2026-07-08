@@ -30,6 +30,7 @@ const zhCN: Bundle = {
   'toolbar.tool.pan': '平移',
   'toolbar.tool.brush': '画笔',
   'toolbar.tool.eraser': '橡皮',
+  'toolbar.tool.entity': '实体',
   'toolbar.tool.fill': '填充',
   'toolbar.tool.rect': '矩形',
   'toolbar.tool.shortcut': '{name}({shortcut})',
@@ -45,6 +46,7 @@ const zhCN: Bundle = {
   'statusbar.tool.pan': '平移',
   'statusbar.tool.brush': '画笔',
   'statusbar.tool.eraser': '橡皮',
+  'statusbar.tool.entity': '实体',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',
@@ -103,6 +105,12 @@ const zhCN: Bundle = {
   'console.tileErased': '[Document] 已擦除({x}, {y})瓦片',
   'console.entityPlaced': '[Document] 已在({x}, {y})放置实体"{name}"',
   'console.colliderPlaced': '[Document] 已在({x}, {y})放置碰撞体({w}×{h})',
+
+  // Entity palette (default entity types)
+  'entity.type.sprite': '精灵',
+  'entity.type.spawn-point': '生成点',
+  'entity.type.door': '门',
+  'entity.type.pickup': '可拾取物',
 
   // Asset browser folders
   'asset.folder.tilesets': '瓦片集',

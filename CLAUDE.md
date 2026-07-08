@@ -157,26 +157,47 @@ Do not bundle "while we're at it" changes into a step. Stay laser-focused.
 
 ## 13. Current step
 
-**Step 17 — Editor UI i18n** — completed. `core/i18n/` is a
-self-contained module: pure `translate()` (unit-tested), Zustand
-locale store, `useT` / `useLocale` / `setLocale` hooks, two bundles
-(`en`, `zh-CN`), localStorage persistence, `<html lang>` side effect
-on change. Every panel string is extracted to flat dot-separated
-keys (`menu.file.save`, `toolbar.tool.brush`, `statusbar.selection.one`,
-...). Missing keys warn once in dev, return the key in prod. Language
-switcher lives in `MenuBar → View → Language` with native-language
-labels. `EditorShell` uses `useT()` for dock titles and `t()` for
-imperative log strings.
+**Step 13 — Object layer + Entity placement** — completed. The Map
+editor can now host identity-bearing objects (NPCs, spawn points,
+doors, pickups) on dedicated `Object` layers.
 
-**Why the locale store lives in `core/i18n/`, not `state/`.**
-`core → types, shared, utils` only — `core/` cannot import from
-`state/` per ESLint. The store needs to be observable by code in
-this module, so it lives here. Zustand is a _library_, not a layer
-— it's used the same way `state/` uses it. Don't move it.
+- `editor/map/commands/layerFactories.ts` mints a fresh `ObjectLayer`
+  (analogous to `TileLayer`) and assigns a unique id.
+- `AddObjectLayerCommand` prepends a new object layer; mirrors the
+  existing tile-layer add.
+- `PlaceEntityCommand` / `RemoveEntityCommand` add and remove
+  entities; the place command appends the entity id to the
+  active object's `entityOrder` and the remove command captures
+  every layer reference so undo restores them.
+- `ObjectLayerView` (PixiJS) renders object layers with one
+  `Container` per layer and a `Graphics` rectangle per entity, in
+  `entityOrder`. Visibility, lock, and reordering all drive from
+  the document store.
+- `EntityTool` (O shortcut) places an entity on click: active layer
+  must be an `Object` layer (else the click is a no-op), Space+left
+  defers to camera, every placement is a single `PlaceEntityCommand`
+  undo entry.
+- `LayerPanel` `+` opens a popover with **Tile** / **Object** choices
+  for v0.1.
+- `editor/map/palette/defaultEntityTypes.ts` is the placeholder
+  palette (sprite / spawn-point / door / pickup) — real plugin
+  renderers land with the Extension Registry.
+- `DocumentService.removeEntity` automatically cleans up dangling
+  references in every `ObjectLayer.entityOrder` so the
+  `RemoveEntityCommand` only has to capture them for undo symmetry.
+- Entity removal from the canvas UI is **not** in scope for Step 13
+  (no selection model yet). Use Undo (Ctrl+Z) to revert. The
+  selection model lands with Step 19.
 
-Next: **Step 13 — Object layer + Entity placement** (entity schema,
-object layer in the Document, palette / inspector for entities,
-PixiJS sprite for placed entities).
+**Why Object layer / entity data lives on `documentStore`, not the
+Pixi scene graph.** PixiJS views must subscribe to a plain-data
+store. `ObjectLayerView` reads `useDocumentStore` and rebuilds its
+Container on a rAF debounce — one place for ordering, visibility,
+and the entity table, all from a single source of truth.
+
+Next: **Step 14 — Collision layer** (mirror of Step 13: collider
+schema, collision layer in the Document, `CollisionLayerView`,
+collision-rectangle placement tool).
 
 ## 14. Common pitfalls to avoid
 

@@ -14,12 +14,13 @@
 
 import { create } from 'zustand';
 
-import { asLayerId, asTileId, asTilesetId } from '@editor/map/schema/ids';
+import { asEntityId, asLayerId, asTileId, asTilesetId } from '@editor/map/schema/ids';
 import { encodeTileCoord } from '@editor/map/schema/tile';
 
 import type { TileLayerEntry } from '@core/document/DocumentService';
+import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
-import type { LayerId, TileCoordKey, TilesetId } from '@editor/map/schema/ids';
+import type { EntityId, LayerId, TileCoordKey, TilesetId } from '@editor/map/schema/ids';
 import type { Layer, TileLayer } from '@editor/map/schema/layer';
 import type { PlacedTile } from '@editor/map/schema/tile';
 import type { Size } from '@local-types/index';
@@ -67,6 +68,10 @@ const asPlacedTile = (entry: TileLayerEntry): PlacedTile => ({
 });
 
 const isTileLayer = (l: Layer): l is TileLayer => l.type === 'tile';
+const isObjectLayer = (
+  l: Layer,
+): l is Layer & { type: 'object'; data: { entityOrder: readonly EntityId[] } } =>
+  l.type === 'object';
 
 const pickNextActive = (layers: ReadonlyArray<Layer>): LayerId => {
   const first = layers[0];
@@ -82,6 +87,8 @@ export interface DocumentState {
   readonly mapSize: Size;
   readonly layers: ReadonlyArray<Layer>;
   readonly activeLayerId: LayerId;
+  /** Entity table — identity-bearing objects placed on Object layers. */
+  readonly entities: ReadonlyMap<EntityId, Entity>;
 
   // ── view-only setters (not Commands) ──────────────────────────────────
   readonly setTileSize: (size: number) => void;
@@ -99,6 +106,12 @@ export interface DocumentState {
   readonly setLayerLocked: (id: LayerId, locked: boolean) => void;
   readonly reorderLayer: (id: LayerId, toIndex: number) => void;
   readonly findLayerIndex: (id: LayerId) => number;
+  readonly appendToObjectLayer: (layerId: LayerId, entityId: EntityId) => boolean;
+  readonly removeFromObjectLayer: (layerId: LayerId, entityId: EntityId) => boolean;
+  readonly addEntity: (entity: Entity) => void;
+  readonly removeEntity: (id: EntityId) => Entity | null;
+  readonly setEntity: (entity: Entity) => void;
+  readonly getEntity: (id: EntityId) => Entity | null;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -106,6 +119,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   mapSize: DEFAULT_MAP_SIZE,
   layers: INITIAL_LAYERS,
   activeLayerId: INITIAL_ACTIVE,
+  entities: new Map<EntityId, Entity>(),
 
   setTileSize: (size) => set({ tileSize: size }),
   setMapSize: (size) => set({ mapSize: size }),
@@ -199,4 +213,66 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }),
 
   findLayerIndex: (id) => get().layers.findIndex((l) => l.id === id),
+
+  // ── entity + ObjectLayer.entityOrder ops ──────────────────────────────
+
+  appendToObjectLayer: (layerId, entityId) => {
+    let appended = false;
+    set((state) => {
+      const idx = state.layers.findIndex((l) => l.id === layerId);
+      const layer = idx === -1 ? undefined : state.layers[idx];
+      if (!layer || !isObjectLayer(layer) || layer.locked) return state;
+      if (layer.data.entityOrder.includes(entityId)) return state;
+      const nextOrder = [...layer.data.entityOrder, entityId];
+      const nextLayers = state.layers.slice();
+      nextLayers[idx] = { ...layer, data: { entityOrder: nextOrder } };
+      appended = true;
+      return { layers: nextLayers };
+    });
+    return appended;
+  },
+
+  removeFromObjectLayer: (layerId, entityId) => {
+    let removed = false;
+    set((state) => {
+      const idx = state.layers.findIndex((l) => l.id === layerId);
+      const layer = idx === -1 ? undefined : state.layers[idx];
+      if (!layer || !isObjectLayer(layer)) return state;
+      if (!layer.data.entityOrder.includes(entityId)) return state;
+      const nextOrder = layer.data.entityOrder.filter((eid) => eid !== entityId);
+      const nextLayers = state.layers.slice();
+      nextLayers[idx] = { ...layer, data: { entityOrder: nextOrder } };
+      removed = true;
+      return { layers: nextLayers };
+    });
+    return removed;
+  },
+
+  addEntity: (entity) =>
+    set((state) => {
+      const next = new Map(state.entities);
+      next.set(asEntityId(entity.id), entity);
+      return { entities: next };
+    }),
+
+  removeEntity: (id) => {
+    let removed: Entity | null = null;
+    set((state) => {
+      if (!state.entities.has(id)) return state;
+      const next = new Map(state.entities);
+      removed = next.get(id) ?? null;
+      next.delete(id);
+      return { entities: next };
+    });
+    return removed;
+  },
+
+  setEntity: (entity) =>
+    set((state) => {
+      const next = new Map(state.entities);
+      next.set(asEntityId(entity.id), entity);
+      return { entities: next };
+    }),
+
+  getEntity: (id) => get().entities.get(id) ?? null,
 }));

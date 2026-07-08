@@ -13,8 +13,9 @@ import { EventEmitter } from '@core/event/EventEmitter';
 import { useDocumentStore } from '@state/documentStore';
 
 import type { Unsubscribe } from '@core/event/EventEmitter';
+import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
-import type { LayerId, TileId } from '@editor/map/schema/ids';
+import type { EntityId, LayerId, TileId } from '@editor/map/schema/ids';
 import type { Layer } from '@editor/map/schema/layer';
 
 export interface DocumentSnapshot {
@@ -22,6 +23,7 @@ export interface DocumentSnapshot {
   readonly mapSize: { readonly width: number; readonly height: number };
   readonly layers: ReadonlyArray<Layer>;
   readonly activeLayerId: LayerId;
+  readonly entities: ReadonlyMap<EntityId, Entity>;
 }
 
 /** Event payload published after any Document mutation. */
@@ -43,6 +45,7 @@ export class DocumentService {
       mapSize: s.mapSize,
       layers: s.layers,
       activeLayerId: s.activeLayerId,
+      entities: s.entities,
     };
   }
 
@@ -101,6 +104,59 @@ export class DocumentService {
 
   layerCount(): number {
     return useDocumentStore.getState().layers.length;
+  }
+
+  // ── entity + ObjectLayer.entityOrder ops ──────────────────────────────
+
+  /** Add an entity to the entities table. */
+  addEntity(entity: Entity): void {
+    useDocumentStore.getState().addEntity(entity);
+    this.emitter.emit({ kind: 'entity:add' });
+  }
+
+  /**
+   * Remove an entity from the entities table AND from every Object
+   * layer's `entityOrder` (orphan cleanup is the caller's
+   * responsibility made automatic). Returns the removed entity, or
+   * `null` if it wasn't present.
+   */
+  removeEntity(id: EntityId): Entity | null {
+    const state = useDocumentStore.getState();
+    const removed = state.removeEntity(id);
+    if (!removed) return null;
+    for (const layer of state.layers) {
+      if (layer.type === 'object' && layer.data.entityOrder.includes(id)) {
+        state.removeFromObjectLayer(layer.id, id);
+      }
+    }
+    this.emitter.emit({ kind: 'entity:remove' });
+    return removed;
+  }
+
+  /** Replace an existing entity. No-op if the id is unknown. */
+  setEntity(entity: Entity): void {
+    if (!useDocumentStore.getState().getEntity(entity.id)) return;
+    useDocumentStore.getState().setEntity(entity);
+    this.emitter.emit({ kind: 'entity:set' });
+  }
+
+  /** Read the current entity (if any) for an id. */
+  getEntity(id: EntityId): Entity | null {
+    return useDocumentStore.getState().getEntity(id);
+  }
+
+  /** Append an entity to an Object layer's `entityOrder`. */
+  appendToObjectLayer(layerId: LayerId, entityId: EntityId): boolean {
+    const ok = useDocumentStore.getState().appendToObjectLayer(layerId, entityId);
+    if (ok) this.emitter.emit({ kind: 'objectLayer:append' });
+    return ok;
+  }
+
+  /** Remove an entity from an Object layer's `entityOrder`. */
+  removeFromObjectLayer(layerId: LayerId, entityId: EntityId): boolean {
+    const ok = useDocumentStore.getState().removeFromObjectLayer(layerId, entityId);
+    if (ok) this.emitter.emit({ kind: 'objectLayer:remove' });
+    return ok;
   }
 }
 

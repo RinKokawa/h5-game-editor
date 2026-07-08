@@ -97,11 +97,12 @@ npm run test:watch   # Vitest watch mode
 - ✅ Vite + React 19 + TypeScript strict
 - ✅ PixiJS renderer + camera + grid + tile layers
 - ✅ Brush tool: paint / erase with drag-to-paint
-- ✅ Select / Pan / Eraser / Brush tools (V / H / B / E)
+- ✅ Select / Pan / Eraser / Brush / Entity tools (V / H / B / E / O)
 - ✅ Selection: single-cell click, marquee, hover, Delete-to-erase
-- ✅ Layer panel: add / delete / move / visibility / lock
+- ✅ Layer panel: add / delete / move / visibility / lock (tile + object layer kinds)
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
 - ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
+- ✅ Object layers + Entity placement (sprite, spawn-point, door, pickup)
 - ✅ Editor UI: English / 简体中文 (MenuBar → View → Language)
 - ✅ Module-boundary ESLint enforcement
 
@@ -121,7 +122,7 @@ npm run test:watch   # Vitest watch mode
 | 10   | Command system + Undo/Redo                      | ✅     |
 | 11   | Selection & marquee                             | ✅     |
 | 12   | Tools (Brush, Eraser, Select, Pan)              | ✅     |
-| 13   | Object layer + Entity placement                 | ⏳     |
+| 13   | Object layer + Entity placement                 | ✅     |
 | 14   | Collision layer                                 | ⏳     |
 | 15   | JSON import / export                            | ✅     |
 | 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |

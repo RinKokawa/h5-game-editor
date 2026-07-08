@@ -110,3 +110,37 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  z-index: 10;
+  min-width: 100px;
+}
+
+.menuItem {
+  width: 100%;
+  padding: 4px 12px;
+  text-align: left;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: var(--color-bg-elevated);
+}

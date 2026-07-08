@@ -31,6 +31,7 @@ const en: Bundle = {
   'toolbar.tool.pan': 'Pan',
   'toolbar.tool.brush': 'Brush',
   'toolbar.tool.eraser': 'Eraser',
+  'toolbar.tool.entity': 'Entity',
   'toolbar.tool.fill': 'Fill',
   'toolbar.tool.rect': 'Rect',
   'toolbar.tool.shortcut': '{name} ({shortcut})',
@@ -46,6 +47,7 @@ const en: Bundle = {
   'statusbar.tool.pan': 'Pan',
   'statusbar.tool.brush': 'Brush',
   'statusbar.tool.eraser': 'Eraser',
+  'statusbar.tool.entity': 'Entity',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',
@@ -104,6 +106,12 @@ const en: Bundle = {
   'console.tileErased': '[Document] erased tile at ({x}, {y})',
   'console.entityPlaced': '[Document] placed entity "{name}" at ({x}, {y})',
   'console.colliderPlaced': '[Document] placed collider at ({x}, {y}) size {w}×{h}',
+
+  // Entity palette (default entity types)
+  'entity.type.sprite': 'Sprite',
+  'entity.type.spawn-point': 'Spawn Point',
+  'entity.type.door': 'Door',
+  'entity.type.pickup': 'Pickup',
 
   // Asset browser folders
   'asset.folder.tilesets': 'tilesets',
