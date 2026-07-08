@@ -37,13 +37,21 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { Camera } from '@canvas/camera/Camera';
+import { CollisionLayerView } from '@canvas/collision-layer/CollisionLayerView';
 import { GridView } from '@canvas/grid/GridView';
 import { ObjectLayerView } from '@canvas/object-layer/ObjectLayerView';
 import { PixiRenderer } from '@canvas/renderer/PixiRenderer';
 import { SelectionOverlay } from '@canvas/selection/SelectionOverlay';
 import { TileLayerView } from '@canvas/tile-layer/TileLayerView';
 import { t as ti18n, useT } from '@core/i18n';
-import { BrushTool, EntityTool, EraserTool, PanTool, SelectTool } from '@editor/map/tools/index';
+import {
+  BrushTool,
+  ColliderTool,
+  EntityTool,
+  EraserTool,
+  PanTool,
+  SelectTool,
+} from '@editor/map/tools/index';
 import { CanvasArea } from '@layout/CanvasArea';
 import { PanelColumn } from '@layout/PanelColumn';
 import { PanelDock } from '@layout/PanelDock';
@@ -88,10 +96,12 @@ export function EditorShell() {
   const gridRef = useRef<GridView | null>(null);
   const tileLayerRef = useRef<TileLayerView | null>(null);
   const objectLayerRef = useRef<ObjectLayerView | null>(null);
+  const collisionLayerRef = useRef<CollisionLayerView | null>(null);
   const selectionRef = useRef<SelectionOverlay | null>(null);
   const brushToolRef = useRef<BrushTool | null>(null);
   const eraserToolRef = useRef<EraserTool | null>(null);
   const entityToolRef = useRef<EntityTool | null>(null);
+  const colliderToolRef = useRef<ColliderTool | null>(null);
   const panToolRef = useRef<PanTool | null>(null);
   const selectToolRef = useRef<SelectTool | null>(null);
 
@@ -147,6 +157,7 @@ export function EditorShell() {
         gridRef.current = new GridView(renderer, camera.worldContainer);
         tileLayerRef.current = new TileLayerView(camera.worldContainer);
         objectLayerRef.current = new ObjectLayerView(camera.worldContainer);
+        collisionLayerRef.current = new CollisionLayerView(camera.worldContainer);
         selectionRef.current = new SelectionOverlay(
           camera.worldContainer,
           () => useDocumentStore.getState().tileSize,
@@ -159,6 +170,7 @@ export function EditorShell() {
           panToolRef.current = new PanTool(canvas);
           selectToolRef.current = new SelectTool(canvas);
           entityToolRef.current = new EntityTool(canvas);
+          colliderToolRef.current = new ColliderTool(canvas);
         }
       })
       .catch((err: unknown) => {
@@ -180,8 +192,12 @@ export function EditorShell() {
       selectToolRef.current = null;
       entityToolRef.current?.destroy();
       entityToolRef.current = null;
+      colliderToolRef.current?.destroy();
+      colliderToolRef.current = null;
       selectionRef.current?.destroy();
       selectionRef.current = null;
+      collisionLayerRef.current?.destroy();
+      collisionLayerRef.current = null;
       objectLayerRef.current?.destroy();
       objectLayerRef.current = null;
       tileLayerRef.current?.destroy();

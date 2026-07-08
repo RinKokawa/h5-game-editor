@@ -13,9 +13,10 @@ import { EventEmitter } from '@core/event/EventEmitter';
 import { useDocumentStore } from '@state/documentStore';
 
 import type { Unsubscribe } from '@core/event/EventEmitter';
+import type { Collider } from '@editor/map/schema/collider';
 import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
-import type { EntityId, LayerId, TileId } from '@editor/map/schema/ids';
+import type { ColliderId, EntityId, LayerId, TileId } from '@editor/map/schema/ids';
 import type { Layer } from '@editor/map/schema/layer';
 
 export interface DocumentSnapshot {
@@ -24,6 +25,7 @@ export interface DocumentSnapshot {
   readonly layers: ReadonlyArray<Layer>;
   readonly activeLayerId: LayerId;
   readonly entities: ReadonlyMap<EntityId, Entity>;
+  readonly colliders: ReadonlyMap<ColliderId, Collider>;
 }
 
 /** Event payload published after any Document mutation. */
@@ -46,6 +48,7 @@ export class DocumentService {
       layers: s.layers,
       activeLayerId: s.activeLayerId,
       entities: s.entities,
+      colliders: s.colliders,
     };
   }
 
@@ -156,6 +159,53 @@ export class DocumentService {
   removeFromObjectLayer(layerId: LayerId, entityId: EntityId): boolean {
     const ok = useDocumentStore.getState().removeFromObjectLayer(layerId, entityId);
     if (ok) this.emitter.emit({ kind: 'objectLayer:remove' });
+    return ok;
+  }
+
+  // ── collider + CollisionLayer.colliderOrder ops ───────────────────────
+
+  /** Add a collider to the colliders table. */
+  addCollider(collider: Collider): void {
+    useDocumentStore.getState().addCollider(collider);
+    this.emitter.emit({ kind: 'collider:add' });
+  }
+
+  /**
+   * Remove a collider from the colliders table AND from every
+   * Collision layer's `colliderOrder` (orphan cleanup is automatic).
+   */
+  removeCollider(id: ColliderId): Collider | null {
+    const state = useDocumentStore.getState();
+    const removed = state.removeCollider(id);
+    if (!removed) return null;
+    for (const layer of state.layers) {
+      if (layer.type === 'collision' && layer.data.colliderOrder.includes(id)) {
+        state.removeFromCollisionLayer(layer.id, id);
+      }
+    }
+    this.emitter.emit({ kind: 'collider:remove' });
+    return removed;
+  }
+
+  setCollider(collider: Collider): void {
+    if (!useDocumentStore.getState().getCollider(collider.id)) return;
+    useDocumentStore.getState().setCollider(collider);
+    this.emitter.emit({ kind: 'collider:set' });
+  }
+
+  getCollider(id: ColliderId): Collider | null {
+    return useDocumentStore.getState().getCollider(id);
+  }
+
+  appendToCollisionLayer(layerId: LayerId, colliderId: ColliderId): boolean {
+    const ok = useDocumentStore.getState().appendToCollisionLayer(layerId, colliderId);
+    if (ok) this.emitter.emit({ kind: 'collisionLayer:append' });
+    return ok;
+  }
+
+  removeFromCollisionLayer(layerId: LayerId, colliderId: ColliderId): boolean {
+    const ok = useDocumentStore.getState().removeFromCollisionLayer(layerId, colliderId);
+    if (ok) this.emitter.emit({ kind: 'collisionLayer:remove' });
     return ok;
   }
 }

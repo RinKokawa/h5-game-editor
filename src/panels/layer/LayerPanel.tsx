@@ -23,12 +23,14 @@ import { useState } from 'react';
 import { commandBus } from '@core/command/commandBusSingleton';
 import { useT } from '@core/i18n';
 import {
+  AddCollisionLayerCommand,
   AddObjectLayerCommand,
   AddTileLayerCommand,
   MoveLayerCommand,
   RemoveLayerCommand,
   SetLayerLockedCommand,
   SetLayerVisibleCommand,
+  createCollisionLayer,
   createObjectLayer,
   createTileLayer,
 } from '@editor/map/commands/index';
@@ -38,7 +40,7 @@ import styles from './LayerPanel.module.css';
 
 import type { Layer, LayerType } from '@editor/map/schema/layer';
 
-type LayerKind = 'tile' | 'object';
+type LayerKind = 'tile' | 'object' | 'collision';
 
 export function LayerPanel() {
   const t = useT();
@@ -57,9 +59,12 @@ export function LayerPanel() {
     if (kind === 'tile') {
       const layer = createTileLayer(layers);
       commandBus.execute(new AddTileLayerCommand(layer, true));
-    } else {
+    } else if (kind === 'object') {
       const layer = createObjectLayer(layers);
       commandBus.execute(new AddObjectLayerCommand(layer, true));
+    } else {
+      const layer = createCollisionLayer(layers);
+      commandBus.execute(new AddCollisionLayerCommand(layer, true));
     }
   };
 
@@ -118,6 +123,16 @@ export function LayerPanel() {
                   onClick={() => handleAddLayer('object')}
                 >
                   {kindLabel('object')}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.menuItem}
+                  onClick={() => handleAddLayer('collision')}
+                >
+                  {kindLabel('collision')}
                 </button>
               </li>
             </ul>

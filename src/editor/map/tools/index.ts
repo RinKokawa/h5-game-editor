@@ -12,3 +12,4 @@ export { EraserTool } from './EraserTool';
 export { PanTool } from './PanTool';
 export { SelectTool } from './SelectTool';
 export { EntityTool } from './EntityTool';
+export { ColliderTool } from './ColliderTool';

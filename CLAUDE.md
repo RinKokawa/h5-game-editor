@@ -195,9 +195,51 @@ store. `ObjectLayerView` reads `useDocumentStore` and rebuilds its
 Container on a rAF debounce — one place for ordering, visibility,
 and the entity table, all from a single source of truth.
 
-Next: **Step 14 — Collision layer** (mirror of Step 13: collider
-schema, collision layer in the Document, `CollisionLayerView`,
-collision-rectangle placement tool).
+**Step 14 — Collision layer + box collider placement** — completed.
+The Map editor now has a `Collision` layer kind that holds typed
+collider shapes; v0.1 ships box placement.
+
+- `editor/map/commands/layerFactories.ts` mints a fresh `CollisionLayer`
+  with empty `colliderOrder`; `AddCollisionLayerCommand` prepends it.
+- `PlaceColliderCommand` adds a collider to the `colliders` table AND
+  appends its id to the layer's `colliderOrder`. The Command takes a
+  `BoxCollider` value (v0.1) — `placeCollider` helper mints a fresh
+  id. `RemoveColliderCommand` is the symmetric inverse; both undo
+  cleanly via `DocumentService.removeCollider` orphan cleanup.
+- `CollisionLayerView` (PixiJS) mirrors `ObjectLayerView`: one
+  `Container` per CollisionLayer, rebuilt on a rAF debounce.
+  Each `box` collider is a translucent filled rectangle stroked in
+  its `kind`-color (solid red, trigger blue, platform green).
+  Circle and polygon entries are skipped in the renderer (schema
+  supports them; UI lands with the collision editor extension).
+- `ColliderTool` (C shortcut) drag-strokes a box; clicks without a
+  drag place a `tileSize` × `tileSize` default box. `MIN_BOX_SIZE=4`
+  guards against zero-size placements. Space+left defers to
+  camera, same as every other tool.
+- `LayerPanel` popover now lists **Tile / Object / Collision**.
+- `documentStore` carries `colliders: ReadonlyMap<ColliderId, Collider>`
+  and primitives (`addCollider`, `removeCollider`, `setCollider`,
+  `getCollider`, `appendToCollisionLayer`,
+  `removeFromCollisionLayer`) — same shape as the entity table.
+- Like Step 13, collider removal from the canvas UI is out of scope
+  (no selection model). Use Undo (Ctrl+Z) to revert. Real selection
+  + Inspector wiring lands in Step 19.
+
+**Why Collision layer / collider data lives on `documentStore`, not the
+Pixi scene graph.** Same reason as Step 13 — `CollisionLayerView`
+subscribes to `useDocumentStore` and rebuilds. The orphan-cleanup
+pattern (`removeCollider` strips dangling ids from every
+`CollisionLayer.colliderOrder`) means commands only need to capture
+refs for undo, not track them.
+
+Next: **Step 19 — PropertiesPanel real data + selection model extension**.
+The Inspector panel currently shows an empty state. We need to widen
+`selectionStore` to track `TileCoordKey[]` (existing), `EntityId[]`,
+and `ColliderId[]`; pick one kind per selection; subscribe the
+`PropertiesPanel` to render the live data of whatever is selected.
+This step also wires `Delete` to erase the right thing (tiles, entities,
+colliders) via the appropriate Command, and double-click on a placed
+entity/collider to select it.
 
 ## 14. Common pitfalls to avoid
 

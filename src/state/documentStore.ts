@@ -14,13 +14,20 @@
 
 import { create } from 'zustand';
 
-import { asEntityId, asLayerId, asTileId, asTilesetId } from '@editor/map/schema/ids';
+import { asColliderId, asEntityId, asLayerId, asTileId, asTilesetId } from '@editor/map/schema/ids';
 import { encodeTileCoord } from '@editor/map/schema/tile';
 
 import type { TileLayerEntry } from '@core/document/DocumentService';
+import type { Collider } from '@editor/map/schema/collider';
 import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
-import type { EntityId, LayerId, TileCoordKey, TilesetId } from '@editor/map/schema/ids';
+import type {
+  ColliderId,
+  EntityId,
+  LayerId,
+  TileCoordKey,
+  TilesetId,
+} from '@editor/map/schema/ids';
 import type { Layer, TileLayer } from '@editor/map/schema/layer';
 import type { PlacedTile } from '@editor/map/schema/tile';
 import type { Size } from '@local-types/index';
@@ -72,6 +79,10 @@ const isObjectLayer = (
   l: Layer,
 ): l is Layer & { type: 'object'; data: { entityOrder: readonly EntityId[] } } =>
   l.type === 'object';
+const isCollisionLayer = (
+  l: Layer,
+): l is Layer & { type: 'collision'; data: { colliderOrder: readonly ColliderId[] } } =>
+  l.type === 'collision';
 
 const pickNextActive = (layers: ReadonlyArray<Layer>): LayerId => {
   const first = layers[0];
@@ -89,6 +100,8 @@ export interface DocumentState {
   readonly activeLayerId: LayerId;
   /** Entity table — identity-bearing objects placed on Object layers. */
   readonly entities: ReadonlyMap<EntityId, Entity>;
+  /** Collider table — collision shapes placed on Collision layers. */
+  readonly colliders: ReadonlyMap<ColliderId, Collider>;
 
   // ── view-only setters (not Commands) ──────────────────────────────────
   readonly setTileSize: (size: number) => void;
@@ -112,6 +125,12 @@ export interface DocumentState {
   readonly removeEntity: (id: EntityId) => Entity | null;
   readonly setEntity: (entity: Entity) => void;
   readonly getEntity: (id: EntityId) => Entity | null;
+  readonly appendToCollisionLayer: (layerId: LayerId, colliderId: ColliderId) => boolean;
+  readonly removeFromCollisionLayer: (layerId: LayerId, colliderId: ColliderId) => boolean;
+  readonly addCollider: (collider: Collider) => void;
+  readonly removeCollider: (id: ColliderId) => Collider | null;
+  readonly setCollider: (collider: Collider) => void;
+  readonly getCollider: (id: ColliderId) => Collider | null;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -120,6 +139,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   layers: INITIAL_LAYERS,
   activeLayerId: INITIAL_ACTIVE,
   entities: new Map<EntityId, Entity>(),
+  colliders: new Map<ColliderId, Collider>(),
 
   setTileSize: (size) => set({ tileSize: size }),
   setMapSize: (size) => set({ mapSize: size }),
@@ -275,4 +295,66 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }),
 
   getEntity: (id) => get().entities.get(id) ?? null,
+
+  // ── collider + CollisionLayer.colliderOrder ops ───────────────────────
+
+  appendToCollisionLayer: (layerId, colliderId) => {
+    let appended = false;
+    set((state) => {
+      const idx = state.layers.findIndex((l) => l.id === layerId);
+      const layer = idx === -1 ? undefined : state.layers[idx];
+      if (!layer || !isCollisionLayer(layer) || layer.locked) return state;
+      if (layer.data.colliderOrder.includes(colliderId)) return state;
+      const nextOrder = [...layer.data.colliderOrder, colliderId];
+      const nextLayers = state.layers.slice();
+      nextLayers[idx] = { ...layer, data: { colliderOrder: nextOrder } };
+      appended = true;
+      return { layers: nextLayers };
+    });
+    return appended;
+  },
+
+  removeFromCollisionLayer: (layerId, colliderId) => {
+    let removed = false;
+    set((state) => {
+      const idx = state.layers.findIndex((l) => l.id === layerId);
+      const layer = idx === -1 ? undefined : state.layers[idx];
+      if (!layer || !isCollisionLayer(layer)) return state;
+      if (!layer.data.colliderOrder.includes(colliderId)) return state;
+      const nextOrder = layer.data.colliderOrder.filter((cid) => cid !== colliderId);
+      const nextLayers = state.layers.slice();
+      nextLayers[idx] = { ...layer, data: { colliderOrder: nextOrder } };
+      removed = true;
+      return { layers: nextLayers };
+    });
+    return removed;
+  },
+
+  addCollider: (collider) =>
+    set((state) => {
+      const next = new Map(state.colliders);
+      next.set(asColliderId(collider.id), collider);
+      return { colliders: next };
+    }),
+
+  removeCollider: (id) => {
+    let removed: Collider | null = null;
+    set((state) => {
+      if (!state.colliders.has(id)) return state;
+      const next = new Map(state.colliders);
+      removed = next.get(id) ?? null;
+      next.delete(id);
+      return { colliders: next };
+    });
+    return removed;
+  },
+
+  setCollider: (collider) =>
+    set((state) => {
+      const next = new Map(state.colliders);
+      next.set(asColliderId(collider.id), collider);
+      return { colliders: next };
+    }),
+
+  getCollider: (id) => get().colliders.get(id) ?? null,
 }));

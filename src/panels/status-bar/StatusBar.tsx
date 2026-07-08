@@ -27,6 +27,7 @@ const TOOL_LABEL_KEY: Record<ToolId, string> = {
   brush: 'statusbar.tool.brush',
   eraser: 'statusbar.tool.eraser',
   entity: 'statusbar.tool.entity',
+  collider: 'statusbar.tool.collider',
 };
 
 export function StatusBar() {

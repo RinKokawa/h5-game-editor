@@ -32,6 +32,7 @@ const en: Bundle = {
   'toolbar.tool.brush': 'Brush',
   'toolbar.tool.eraser': 'Eraser',
   'toolbar.tool.entity': 'Entity',
+  'toolbar.tool.collider': 'Collider',
   'toolbar.tool.fill': 'Fill',
   'toolbar.tool.rect': 'Rect',
   'toolbar.tool.shortcut': '{name} ({shortcut})',
@@ -48,6 +49,7 @@ const en: Bundle = {
   'statusbar.tool.brush': 'Brush',
   'statusbar.tool.eraser': 'Eraser',
   'statusbar.tool.entity': 'Entity',
+  'statusbar.tool.collider': 'Collider',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',

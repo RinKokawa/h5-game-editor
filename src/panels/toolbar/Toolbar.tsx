@@ -30,6 +30,7 @@ const TOOLS: readonly ToolButton[] = [
   { id: 'brush', labelKey: 'toolbar.tool.brush', shortcut: 'B', enabled: true },
   { id: 'eraser', labelKey: 'toolbar.tool.eraser', shortcut: 'E', enabled: true },
   { id: 'entity', labelKey: 'toolbar.tool.entity', shortcut: 'O', enabled: true },
+  { id: 'collider', labelKey: 'toolbar.tool.collider', shortcut: 'C', enabled: true },
   { id: 'placeholder', labelKey: 'toolbar.tool.fill', shortcut: 'F', enabled: false },
   { id: 'placeholder', labelKey: 'toolbar.tool.rect', shortcut: 'R', enabled: false },
 ];

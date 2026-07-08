@@ -31,6 +31,7 @@ const zhCN: Bundle = {
   'toolbar.tool.brush': '画笔',
   'toolbar.tool.eraser': '橡皮',
   'toolbar.tool.entity': '实体',
+  'toolbar.tool.collider': '碰撞体',
   'toolbar.tool.fill': '填充',
   'toolbar.tool.rect': '矩形',
   'toolbar.tool.shortcut': '{name}({shortcut})',
@@ -47,6 +48,7 @@ const zhCN: Bundle = {
   'statusbar.tool.brush': '画笔',
   'statusbar.tool.eraser': '橡皮',
   'statusbar.tool.entity': '实体',
+  'statusbar.tool.collider': '碰撞体',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',

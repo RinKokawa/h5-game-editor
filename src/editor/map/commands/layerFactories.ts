@@ -7,8 +7,8 @@
 
 import { asLayerId } from '@editor/map/schema/ids';
 
-import type { EntityId, LayerId, TileCoordKey } from '@editor/map/schema/ids';
-import type { Layer, ObjectLayer, TileLayer } from '@editor/map/schema/layer';
+import type { ColliderId, EntityId, LayerId, TileCoordKey } from '@editor/map/schema/ids';
+import type { CollisionLayer, Layer, ObjectLayer, TileLayer } from '@editor/map/schema/layer';
 import type { PlacedTile } from '@editor/map/schema/tile';
 
 const newLayerId = (kind: 'tile' | 'object' | 'collision'): LayerId =>
@@ -40,4 +40,18 @@ export const createObjectLayer = (existing: ReadonlyArray<Layer>, name?: string)
   opacity: 1,
   properties: { entries: new Map() },
   data: { entityOrder: [] as readonly EntityId[] },
+});
+
+export const createCollisionLayer = (
+  existing: ReadonlyArray<Layer>,
+  name?: string,
+): CollisionLayer => ({
+  id: newLayerId('collision'),
+  type: 'collision',
+  name: name ?? newLayerName(existing),
+  visible: true,
+  locked: false,
+  opacity: 1,
+  properties: { entries: new Map() },
+  data: { colliderOrder: [] as readonly ColliderId[] },
 });

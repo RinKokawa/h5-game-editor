@@ -103,6 +103,7 @@ npm run test:watch   # Vitest watch mode
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
 - ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
 - ✅ Object layers + Entity placement (sprite, spawn-point, door, pickup)
+- ✅ Collision layers + box collider placement (C tool, drag-to-size)
 - ✅ Editor UI: English / 简体中文 (MenuBar → View → Language)
 - ✅ Module-boundary ESLint enforcement
 
@@ -123,7 +124,7 @@ npm run test:watch   # Vitest watch mode
 | 11   | Selection & marquee                             | ✅     |
 | 12   | Tools (Brush, Eraser, Select, Pan)              | ✅     |
 | 13   | Object layer + Entity placement                 | ✅     |
-| 14   | Collision layer                                 | ⏳     |
+| 14   | Collision layer                                 | ✅     |
 | 15   | JSON import / export                            | ✅     |
 | 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |
 | 17   | Editor UI i18n (English / 简体中文)             | ✅     |
