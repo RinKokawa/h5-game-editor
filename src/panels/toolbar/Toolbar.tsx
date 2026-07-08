@@ -32,7 +32,7 @@ const TOOLS: readonly ToolButton[] = [
   { id: 'entity', labelKey: 'toolbar.tool.entity', shortcut: 'O', enabled: true },
   { id: 'collider', labelKey: 'toolbar.tool.collider', shortcut: 'C', enabled: true },
   { id: 'placeholder', labelKey: 'toolbar.tool.fill', shortcut: 'F', enabled: false },
-  { id: 'placeholder', labelKey: 'toolbar.tool.rect', shortcut: 'R', enabled: false },
+  { id: 'rect', labelKey: 'toolbar.tool.rect', shortcut: 'R', enabled: true },
 ];
 
 export function Toolbar() {

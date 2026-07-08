@@ -10,6 +10,7 @@
 export { BrushTool } from './BrushTool';
 export { EraserTool } from './EraserTool';
 export { PanTool } from './PanTool';
+export { RectTool } from './RectTool';
 export { SelectTool } from './SelectTool';
 export { EntityTool } from './EntityTool';
 export { ColliderTool } from './ColliderTool';

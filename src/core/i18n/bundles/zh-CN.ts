@@ -49,6 +49,7 @@ const zhCN: Bundle = {
   'statusbar.tool.eraser': '橡皮',
   'statusbar.tool.entity': '实体',
   'statusbar.tool.collider': '碰撞体',
+  'statusbar.tool.rect': '矩形',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',

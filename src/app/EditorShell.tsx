@@ -50,6 +50,7 @@ import {
   EntityTool,
   EraserTool,
   PanTool,
+  RectTool,
   SelectTool,
 } from '@editor/map/tools/index';
 import { CanvasArea } from '@layout/CanvasArea';
@@ -100,6 +101,7 @@ export function EditorShell() {
   const collisionLayerRef = useRef<CollisionLayerView | null>(null);
   const selectionRef = useRef<SelectionOverlay | null>(null);
   const brushToolRef = useRef<BrushTool | null>(null);
+  const rectToolRef = useRef<RectTool | null>(null);
   const eraserToolRef = useRef<EraserTool | null>(null);
   const entityToolRef = useRef<EntityTool | null>(null);
   const colliderToolRef = useRef<ColliderTool | null>(null);
@@ -175,6 +177,7 @@ export function EditorShell() {
           selectToolRef.current = new SelectTool(canvas);
           entityToolRef.current = new EntityTool(canvas);
           colliderToolRef.current = new ColliderTool(canvas);
+          rectToolRef.current = new RectTool(canvas);
         }
       })
       .catch((err: unknown) => {
@@ -198,6 +201,8 @@ export function EditorShell() {
       entityToolRef.current = null;
       colliderToolRef.current?.destroy();
       colliderToolRef.current = null;
+      rectToolRef.current?.destroy();
+      rectToolRef.current = null;
       selectionRef.current?.destroy();
       selectionRef.current = null;
       collisionLayerRef.current?.destroy();

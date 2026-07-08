@@ -57,6 +57,7 @@ const jaJP: Bundle = {
   'statusbar.tool.eraser': '消しゴム',
   'statusbar.tool.entity': 'エンティティ',
   'statusbar.tool.collider': 'コライダー',
+  'statusbar.tool.rect': '矩形',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',

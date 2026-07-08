@@ -30,6 +30,7 @@ const SHORTCUTS: Readonly<Record<string, ToolId>> = {
   e: 'eraser',
   o: 'entity',
   c: 'collider',
+  r: 'rect',
 };
 
 const isEditableTarget = (target: EventTarget | null): boolean => {

@@ -50,6 +50,7 @@ const en: Bundle = {
   'statusbar.tool.eraser': 'Eraser',
   'statusbar.tool.entity': 'Entity',
   'statusbar.tool.collider': 'Collider',
+  'statusbar.tool.rect': 'Rect',
 
   // StatusBar — selection count
   'statusbar.selection.empty': '—',

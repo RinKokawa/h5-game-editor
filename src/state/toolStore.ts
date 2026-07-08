@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 
-export type ToolId = 'select' | 'pan' | 'brush' | 'eraser' | 'entity' | 'collider';
+export type ToolId = 'select' | 'pan' | 'brush' | 'eraser' | 'entity' | 'collider' | 'rect';
 
 export interface ToolState {
   readonly activeToolId: ToolId;
