@@ -97,13 +97,14 @@ npm run test:watch   # Vitest watch mode
 - ✅ Vite + React 19 + TypeScript strict
 - ✅ PixiJS renderer + camera + grid + tile layers
 - ✅ Brush tool: paint / erase with drag-to-paint
-- ✅ Select / Pan / Eraser / Brush / Entity tools (V / H / B / E / O)
-- ✅ Selection: single-cell click, marquee, hover, Delete-to-erase
-- ✅ Layer panel: add / delete / move / visibility / lock (tile + object layer kinds)
+- ✅ Select / Pan / Eraser / Brush / Entity / Collider tools (V / H / B / E / O / C)
+- ✅ Selection: tiles (click + marquee), entities (click), colliders (click), Delete-to-erase
+- ✅ Layer panel: add / delete / move / visibility / lock (tile + object + collision layer kinds)
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
 - ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
 - ✅ Object layers + Entity placement (sprite, spawn-point, door, pickup)
-- ✅ Collision layers + box collider placement (C tool, drag-to-size)
+- ✅ Collision layers + box collider placement (drag-to-size)
+- ✅ PropertiesPanel: live read-only view of the current selection
 - ✅ Editor UI: English / 简体中文 (MenuBar → View → Language)
 - ✅ Module-boundary ESLint enforcement
 
@@ -128,6 +129,7 @@ npm run test:watch   # Vitest watch mode
 | 15   | JSON import / export                            | ✅     |
 | 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |
 | 17   | Editor UI i18n (English / 简体中文)             | ✅     |
+| 19   | Selection model + PropertiesPanel real data     | ✅     |
 
 Future editor types (Dialogue, Animation, Quest, Inventory, Skill,
 Cutscene, Node, Localization, Timeline, Particle) plug into the existing

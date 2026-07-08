@@ -7,8 +7,11 @@
  * At `undo` time: restore each captured entry and re-select the
  * same cells so the user can see what came back.
  *
- * If the selection is empty at `do`, `isEmpty()` returns true and
- * callers should skip dispatching.
+ * If the selection is empty (or non-tile) at `do`, `isEmpty()`
+ * returns true and callers should skip dispatching. Entity / collider
+ * selection erase paths live in `RemoveEntityCommand` /
+ * `RemoveColliderCommand` — this Command is tile-only on purpose so
+ * the SelectionShortcuts can pick the right Command by `kind`.
  */
 
 import { decodeTileCoord } from '@editor/map/schema/tile';
@@ -31,17 +34,22 @@ export class EraseSelectionCommand implements Command {
   private prevCells: TileCoord[] = [];
 
   isEmpty(): boolean {
-    const s = useSelectionStore.getState();
-    return s.layerId === null || s.cells.size === 0;
+    const s = useSelectionStore.getState().selection;
+    return s?.kind !== 'tiles' || s.cells.size === 0;
   }
 
   do(service: DocumentService): void {
-    const sel = useSelectionStore.getState();
+    const sel = useSelectionStore.getState().selection;
+    if (sel?.kind !== 'tiles') {
+      this.prevLayer = null;
+      this.prevCells = [];
+      return;
+    }
     this.prevLayer = sel.layerId;
     this.prevCells = [];
     for (const key of sel.cells) this.prevCells.push(decodeTileCoord(key));
 
-    if (sel.layerId === null || sel.cells.size === 0) return;
+    if (sel.cells.size === 0) return;
 
     const layerId = sel.layerId;
     this.captured = [];
@@ -63,7 +71,7 @@ export class EraseSelectionCommand implements Command {
       new PlaceTileCommand(c.layerId, c.coord, c.entry).undo(service);
     }
     if (this.prevLayer !== null) {
-      useSelectionStore.getState().setSelection(this.prevLayer, this.prevCells);
+      useSelectionStore.getState().setTileSelection(this.prevLayer, this.prevCells);
     }
   }
 }

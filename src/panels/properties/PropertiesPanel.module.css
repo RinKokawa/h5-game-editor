@@ -31,3 +31,14 @@
   font-family: var(--font-mono);
   font-size: 11px;
 }
+
+.empty {
+  margin: 0;
+  padding: 16px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  border: 1px dashed var(--color-border);
+  border-radius: 4px;
+  text-align: center;
+}

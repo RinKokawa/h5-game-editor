@@ -63,7 +63,12 @@ export function StatusBar() {
   const historyLabel = `${canUndo ? t('toolbar.undo') : t('statusbar.selection.empty')} / ${
     canRedo ? t('toolbar.redo') : t('statusbar.selection.empty')
   }`;
-  const selectionSize = useSelectionStore((s) => s.cells.size);
+  const selectionSize = useSelectionStore((s) => {
+    const sel = s.selection;
+    if (sel === null) return 0;
+    if (sel.kind === 'tiles') return sel.cells.size;
+    return 1;
+  });
   const selectionLabel =
     selectionSize === 0
       ? t('statusbar.selection.empty')

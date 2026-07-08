@@ -1,17 +1,26 @@
 /**
- * SelectTool — click cells to toggle selection, drag to marquee.
+ * SelectTool — click cells/entities/colliders to select them, drag
+ * a marquee on Tile layers.
  *
- * Behavior:
- *   - pointerdown (no drag): clear previous selection, select clicked cell
- *   - pointerdown → pointermove (dragged): replace selection with
- *     marquee contents (inclusive rect of start..end)
- *   - pointermove (no drag): update hover highlight
- *   - ESC clears selection (handled by SelectionShortcuts, not here)
- *   - Space+left: defer to camera (consistent with BrushTool)
+ * Per-layer behavior:
+ *   - Tile layer: existing tile selection (click → single-cell toggle,
+ *     drag → marquee). Hover is captured for the single-cell overlay.
+ *   - Object layer: topmost entity whose AABB contains the click is
+ *     selected. Click in empty space clears.
+ *   - Collision layer: topmost collider whose AABB contains the click
+ *     is selected. Click in empty space clears.
  *
- * Selection is per active layer. The active layer at click time is
- * captured and used throughout the drag — switching layers mid-drag
- * doesn't reshuffle the marquee.
+ * Click without drag selects the topmost thing at the cursor;
+ * drag without movement (size === 1 in tile space) is still a toggle
+ * in tile mode. Object/Collision layers don't have a marquee in v0.1;
+ * multi-select will land with the selection extension step.
+ *
+ * Pan-vs-paint arbitration: Space+left defers to camera, same as every
+ * other tool.
+ *
+ * Selection always targets the ACTIVE layer — entities/colliders on
+ * non-active layers are unreachable here. Cross-layer selection
+ * extension lands with the selection model (out of scope for v0.1).
  */
 
 import { screenToWorld } from '@shared/math/index';
@@ -20,17 +29,20 @@ import { useSelectionStore } from '@state/selectionStore';
 import { useToolStore } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
 
+import type { Collider } from '@editor/map/schema/collider';
+import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
-import type { LayerId } from '@editor/map/schema/ids';
+import type { ColliderId, EntityId } from '@editor/map/schema/ids';
+import type { CollisionLayer, Layer, ObjectLayer, TileLayer } from '@editor/map/schema/layer';
 
 export class SelectTool {
   private readonly canvas: HTMLCanvasElement;
 
   private spacePressed = false;
   private dragging = false;
-  private dragStart: TileCoord | null = null;
-  private dragLayerId: LayerId | null = null;
   private lastPointerEvent: PointerEvent | null = null;
+  /** Pointer-down world point, used for object/collision hit-tests. */
+  private pointerDownWorld: { x: number; y: number } | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -50,9 +62,8 @@ export class SelectTool {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     this.dragging = false;
-    this.dragStart = null;
-    this.dragLayerId = null;
     this.lastPointerEvent = null;
+    this.pointerDownWorld = null;
     useSelectionStore.getState().setHover(null);
   }
 
@@ -60,28 +71,37 @@ export class SelectTool {
     if (!this.isActive()) return;
     if (event.button !== 0) return;
     if (this.spacePressed) return;
-    const coord = this.eventToCoord(event);
-    if (!coord) return;
-    const layer = this.activeTileLayer();
+    const world = this.eventToWorld(event);
+    if (!world) return;
+    const layer = this.activeLayer();
     if (!layer) return;
 
     event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.dragging = true;
-    this.dragStart = coord;
-    this.dragLayerId = layer.id;
-    useSelectionStore.getState().beginMarquee(layer.id, coord);
+    this.pointerDownWorld = world;
+
+    if (layer.type === 'tile') {
+      const coord = worldToTile(world, useDocumentStore.getState().tileSize);
+      useSelectionStore.getState().beginMarquee(layer.id, coord);
+    }
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (!this.isActive()) return;
-    const coord = this.eventToCoord(event);
-    if (!coord) return;
+    const world = this.eventToWorld(event);
+    if (!world) return;
     this.lastPointerEvent = event;
-    useSelectionStore.getState().setHover(coord);
+    const doc = useDocumentStore.getState();
+    useSelectionStore.getState().setHover(worldToTile(world, doc.tileSize));
 
     if (this.dragging) {
-      useSelectionStore.getState().updateMarquee(coord);
+      const layer = this.activeLayer();
+      if (layer?.type === 'tile') {
+        useSelectionStore
+          .getState()
+          .updateMarquee(worldToTile(world, useDocumentStore.getState().tileSize));
+      }
     }
   };
 
@@ -90,19 +110,34 @@ export class SelectTool {
     if (this.canvas.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
-    const start = this.dragStart;
-    const layerId = this.dragLayerId;
-    const cells = useSelectionStore.getState().endMarquee();
+    const down = this.pointerDownWorld;
+    const up = this.lastPointerEvent ? this.eventToWorld(this.lastPointerEvent) : null;
     this.dragging = false;
-    this.dragStart = null;
-    this.dragLayerId = null;
+    this.pointerDownWorld = null;
 
-    // No-drag click → toggle the clicked cell only.
-    if (start && this.lastPointerEvent && cells.size === 1) {
-      const lastCoord = this.eventToCoord(this.lastPointerEvent);
-      if (lastCoord && lastCoord.x === start.x && lastCoord.y === start.y && layerId) {
-        useSelectionStore.getState().toggleCell(layerId, start);
+    const layer = this.activeLayer();
+    if (!layer || !down || !up) return;
+    const dx = up.x - down.x;
+    const dy = up.y - down.y;
+    const dragged = dx * dx + dy * dy > 4; // > 2px squared
+
+    if (layer.type === 'tile') {
+      if (dragged) {
+        // Marquee path: endMarquee already populated selection.
+        return;
       }
+      // Click without drag → toggle the cell under the cursor.
+      const doc = useDocumentStore.getState();
+      const tileSize = doc.tileSize;
+      const coord = worldToTile(down, tileSize);
+      useSelectionStore.getState().toggleTileCell(layer.id, coord);
+      return;
+    }
+
+    // Object / Collision: click-and-release picks the topmost entity
+    // or collider under the cursor (or clears if empty).
+    if (!dragged) {
+      this.pickAt(layer, down);
     }
   };
 
@@ -126,23 +161,97 @@ export class SelectTool {
     return useToolStore.getState().activeToolId === 'select';
   }
 
-  private activeTileLayer() {
+  private activeLayer(): TileLayer | ObjectLayer | CollisionLayer | null {
     const doc = useDocumentStore.getState();
     const layer = doc.layers.find((l) => l.id === doc.activeLayerId);
-    if (!layer || layer.type !== 'tile') return null;
+    if (!layer) return null;
+    if (layer.type !== 'tile' && layer.type !== 'object' && layer.type !== 'collision') {
+      return null;
+    }
     return layer;
   }
 
-  private eventToCoord(event: PointerEvent): TileCoord | null {
+  private eventToWorld(event: PointerEvent): { x: number; y: number } | null {
     const rect = this.canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
     if (world.x < 0 || world.y < 0) return null;
     if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return null;
-    return {
-      x: Math.floor(world.x / doc.tileSize),
-      y: Math.floor(world.y / doc.tileSize),
-    };
+    return world;
+  }
+
+  /**
+   * Pick the topmost entity/collider under `world` on `layer`, or clear
+   * the selection if the click landed in empty space. Selection is set
+   * by kind, not by `layer.type`.
+   */
+  private pickAt(layer: Layer, world: { x: number; y: number }): void {
+    const doc = useDocumentStore.getState();
+    if (layer.type === 'object') {
+      const topId = topmostEntityAt(layer, world, doc.entities);
+      if (topId) useSelectionStore.getState().setEntitySelection(topId, layer.id);
+      else useSelectionStore.getState().clear();
+    } else if (layer.type === 'collision') {
+      const topId = topmostColliderAt(layer, world, doc.colliders);
+      if (topId) useSelectionStore.getState().setColliderSelection(topId, layer.id);
+      else useSelectionStore.getState().clear();
+    }
   }
 }
+
+const worldToTile = (world: { x: number; y: number }, tileSize: number): TileCoord => ({
+  x: Math.floor(world.x / tileSize),
+  y: Math.floor(world.y / tileSize),
+});
+
+const topmostEntityAt = (
+  layer: ObjectLayer,
+  world: { x: number; y: number },
+  entities: ReadonlyMap<EntityId, Entity>,
+): EntityId | null => {
+  const order = layer.data.entityOrder;
+  // Honour draw order: later entries paint on top, so the visually
+  // topmost entity is the LAST match in entityOrder.
+  for (let i = order.length - 1; i >= 0; i--) {
+    const id = order[i];
+    if (!id) continue;
+    const e = entities.get(id);
+    if (!e) continue;
+    if (
+      world.x >= e.position.x &&
+      world.x < e.position.x + e.size.width &&
+      world.y >= e.position.y &&
+      world.y < e.position.y + e.size.height
+    ) {
+      return id;
+    }
+  }
+  return null;
+};
+
+const topmostColliderAt = (
+  layer: CollisionLayer,
+  world: { x: number; y: number },
+  colliders: ReadonlyMap<ColliderId, Collider>,
+): ColliderId | null => {
+  const order = layer.data.colliderOrder;
+  for (let i = order.length - 1; i >= 0; i--) {
+    const id = order[i];
+    if (!id) continue;
+    const c = colliders.get(id);
+    if (!c) continue;
+    if (c.type === 'box') {
+      if (
+        world.x >= c.position.x &&
+        world.x < c.position.x + c.size.width &&
+        world.y >= c.position.y &&
+        world.y < c.position.y + c.size.height
+      ) {
+        return id;
+      }
+    }
+    // Circle / polygon AABB tests land with the collider editor.
+  }
+  return null;
+};

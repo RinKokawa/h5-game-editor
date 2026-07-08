@@ -2,16 +2,21 @@
  * SelectionOverlay — draws selection rectangles and marquee preview
  * over the world container.
  *
- * Two distinct visuals:
- *   - Filled selection: a translucent fill plus a 1px outline per
- *     selected cell.
- *   - Marquee outline: a dashed-style rectangle for the in-progress
- *     drag preview (we use a solid outline — dashing in Pixi v8 is
- *     not free, and the overlay is repainted on every store change
- *     so visual fidelity matters less than responsiveness).
+ * Three distinct visuals:
+ *   - Tile cells: translucent fill + 1px outline per selected cell.
+ *   - Non-tile selection (entity / collider): a 1.5px outline around
+ *     the world-pixel bounds, plus a tiny corner-mark to distinguish
+ *     it from the underlying object. Outline color is constant (blue)
+ *     so the user reads "selected" regardless of object kind.
+ *   - Marquee outline: a solid rect over the in-progress drag preview.
+ *     (Tile-only in v0.1 — SelectTool gates on layer type.)
  *
- * Subscribes to selectionStore. Redraws are coalesced via
- * requestAnimationFrame, same pattern as GridView / TileLayerView.
+ * Hover is tile-only; entity / collider hover lands with the editor
+ * extension.
+ *
+ * Subscribes to selectionStore AND documentStore (entity / collider
+ * position info). Redraws are coalesced via requestAnimationFrame,
+ * same pattern as GridView / TileLayerView.
  *
  * Does NOT consume pointer events.
  */
@@ -19,6 +24,7 @@
 import { Container, Graphics } from 'pixi.js';
 
 import { decodeTileCoord } from '@editor/map/schema/tile';
+import { useDocumentStore } from '@state/documentStore';
 import { useSelectionStore } from '@state/selectionStore';
 
 import type { TileCoord } from '@editor/map/schema/geometry';
@@ -27,6 +33,8 @@ const SELECTION_FILL_COLOR = 0x4d9fff;
 const SELECTION_FILL_ALPHA = 0.18;
 const SELECTION_OUTLINE_COLOR = 0x4d9fff;
 const SELECTION_OUTLINE_ALPHA = 0.9;
+
+const NON_TILE_OUTLINE_WIDTH = 1.5;
 
 const MARQUEE_OUTLINE_COLOR = 0xffffff;
 const MARQUEE_OUTLINE_ALPHA = 0.9;
@@ -59,6 +67,10 @@ export class SelectionOverlay {
     tileSizeGetter(); // initial seed
 
     this.unsubscribes.push(useSelectionStore.subscribe(() => this.scheduleRedraw()));
+    // The selected entity/collider can move (or be removed) without
+    // touching the selection store. Subscribe to the document too so
+    // the outline tracks.
+    this.unsubscribes.push(useDocumentStore.subscribe(() => this.scheduleRedraw()));
     this.scheduleRedraw();
   }
 
@@ -88,14 +100,15 @@ export class SelectionOverlay {
   private draw(): void {
     if (this.destroyed) return;
 
-    const { cells, marquee, hover } = useSelectionStore.getState();
+    const { selection, marquee, hover } = useSelectionStore.getState();
+    const doc = useDocumentStore.getState();
     const tileSize = this.tileSize;
     const g = this.graphics;
     g.clear();
 
-    if (cells.size > 0) {
+    if (selection?.kind === 'tiles') {
       const lineWidth = 1; // 1 world unit; the parent container's zoom gives CSS pixels
-      for (const key of cells) {
+      for (const key of selection.cells) {
         const c = decodeTileCoord(key);
         g.rect(c.x * tileSize, c.y * tileSize, tileSize, tileSize)
           .fill({ color: SELECTION_FILL_COLOR, alpha: SELECTION_FILL_ALPHA })
@@ -104,6 +117,26 @@ export class SelectionOverlay {
             width: lineWidth,
             alpha: SELECTION_OUTLINE_ALPHA,
           });
+      }
+    } else if (selection?.kind === 'entity') {
+      const e = doc.entities.get(selection.entityId);
+      if (e) {
+        g.rect(e.position.x, e.position.y, e.size.width, e.size.height).stroke({
+          color: SELECTION_OUTLINE_COLOR,
+          width: NON_TILE_OUTLINE_WIDTH,
+          alpha: SELECTION_OUTLINE_ALPHA,
+        });
+        drawCornerMarks(g, e.position.x, e.position.y, e.size.width, e.size.height);
+      }
+    } else if (selection?.kind === 'collider') {
+      const c = doc.colliders.get(selection.colliderId);
+      if (c?.type === 'box') {
+        g.rect(c.position.x, c.position.y, c.size.width, c.size.height).stroke({
+          color: SELECTION_OUTLINE_COLOR,
+          width: NON_TILE_OUTLINE_WIDTH,
+          alpha: SELECTION_OUTLINE_ALPHA,
+        });
+        drawCornerMarks(g, c.position.x, c.position.y, c.size.width, c.size.height);
       }
     }
 
@@ -125,6 +158,36 @@ export class SelectionOverlay {
     }
   }
 }
+
+const drawCornerMarks = (g: Graphics, x: number, y: number, w: number, h: number): void => {
+  const m = 4;
+  const c = SELECTION_OUTLINE_COLOR;
+  const a = 0.9;
+  g.moveTo(x, y)
+    .lineTo(x + m, y)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x, y)
+    .lineTo(x, y + m)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x + w, y)
+    .lineTo(x + w - m, y)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x + w, y)
+    .lineTo(x + w, y + m)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x, y + h)
+    .lineTo(x + m, y + h)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x, y + h)
+    .lineTo(x, y + h - m)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x + w, y + h)
+    .lineTo(x + w - m, y + h)
+    .stroke({ color: c, width: 1, alpha: a });
+  g.moveTo(x + w, y + h)
+    .lineTo(x + w, y + h - m)
+    .stroke({ color: c, width: 1, alpha: a });
+};
 
 const rectFromCorners = (
   a: TileCoord,

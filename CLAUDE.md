@@ -223,7 +223,7 @@ collider shapes; v0.1 ships box placement.
   `removeFromCollisionLayer`) — same shape as the entity table.
 - Like Step 13, collider removal from the canvas UI is out of scope
   (no selection model). Use Undo (Ctrl+Z) to revert. Real selection
-  + Inspector wiring lands in Step 19.
+  - Inspector wiring lands in Step 19.
 
 **Why Collision layer / collider data lives on `documentStore`, not the
 Pixi scene graph.** Same reason as Step 13 — `CollisionLayerView`
@@ -232,14 +232,58 @@ pattern (`removeCollider` strips dangling ids from every
 `CollisionLayer.colliderOrder`) means commands only need to capture
 refs for undo, not track them.
 
-Next: **Step 19 — PropertiesPanel real data + selection model extension**.
-The Inspector panel currently shows an empty state. We need to widen
-`selectionStore` to track `TileCoordKey[]` (existing), `EntityId[]`,
-and `ColliderId[]`; pick one kind per selection; subscribe the
-`PropertiesPanel` to render the live data of whatever is selected.
-This step also wires `Delete` to erase the right thing (tiles, entities,
-colliders) via the appropriate Command, and double-click on a placed
-entity/collider to select it.
+**Step 19 — Selection model extension + PropertiesPanel real data**
+— completed. The selection store is now a discriminated union:
+`{ kind: 'tiles' | 'entity' | 'collider', ... }`. The
+`PropertiesPanel` is no longer a placeholder — it renders the live
+data of whatever is selected.
+
+- `selectionStore.ts` exposes
+  `Selection = TileSelection | EntitySelection | ColliderSelection`.
+  `setTileSelection / toggleTileCell / addTileCell` (tile-side),
+  `setEntitySelection / setColliderSelection` (identity-side).
+  `marquee` and `hover` remain tile-only in v0.1 (entity / collider
+  marquee lands with the selection extension step).
+- `SelectTool` hit-tests all three layer kinds. On a Tile layer it
+  keeps the existing toggle / marquee behavior; on Object layers it
+  picks the topmost entity whose AABB contains the click; on
+  Collision layers, the topmost box collider. Cross-layer selection
+  is out of scope (Step 22).
+- `SelectionOverlay` (PixiJS) now subscribes to BOTH `selectionStore`
+  and `documentStore`, so selected entity / collider outlines track
+  live position changes (or vanish when the selected thing is
+  deleted). Outlines get a tiny corner-mark so they read as selection
+  vs. the underlying object. Circle / polygon collider outlines fall
+  through with the editor extension.
+- `EraseSelectionCommand` is now strictly tile-side: it `isEmpty()`
+  returns true for non-tile selections, and only the tile path
+  captures/restores the prior cells. Symmetric `RemoveEntityCommand`
+  and `RemoveColliderCommand` are routed in the keyboard handler.
+- `SelectionShortcuts.Delete` / `Backspace` switches on
+  `selection.kind`: tile → `EraseSelectionCommand`, entity →
+  `RemoveEntityCommand`, collider → `RemoveColliderCommand`.
+  `Escape` clears any selection (and any in-flight marquee).
+- `PropertiesPanel` renders flat key/value rows for the current
+  selection. Entity rows show id / type / name / position / size /
+  rotation; collider rows add `kind` and adapt the geometry block to
+  box (size + rotation), circle (radius), or polygon (vertex count).
+  Tile rows list the layer name + cell count, then one row per cell
+  with `tilesetId / tileId`. Empty / stale states print a centered hint.
+- `StatusBar` selection counter is now kind-aware: tiles report their
+  cell count, entity / collider always 1, none → 0. The
+  `selection.size`-on-`cells` shortcut is gone.
+
+**Why the selection is a single discriminated union, not three
+parallel fields.** Each selection picks exactly one kind. Forcing the
+union means consumers (`EraseSelectionCommand`, `StatusBar`,
+`PropertiesPanel`, `SelectionShortcuts`) must narrow explicitly —
+the compiler catches any path that mixes kinds. A field-based design
+("`entityId?` + `colliderId?` + ... + a `kind` discriminator")
+re-introduces all the combinations a discriminated union removes.
+
+Next: **Step 21 — Inspector schema-driven edits** (untouched; the
+Inspector keeps showing the empty state until the schema-driven
+field-renderer architecture lands).
 
 ## 14. Common pitfalls to avoid
 
