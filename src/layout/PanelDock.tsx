@@ -33,7 +33,19 @@ export function PanelDock({ title, children, defaultOpen = true, actions }: Pane
           aria-controls={bodyId}
         >
           <span className={styles.caret} aria-hidden="true">
-            {open ? '▾' : '▸'}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6l6-6" />
+            </svg>
           </span>
           <span className={styles.title}>{title}</span>
         </button>
