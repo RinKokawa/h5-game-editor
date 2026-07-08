@@ -101,11 +101,13 @@ npm run test:watch   # Vitest watch mode
 - ✅ Selection: tiles (click + marquee), entities (click), colliders (click), Delete-to-erase
 - ✅ Layer panel: add / delete / move / visibility / lock (tile + object + collision layer kinds)
 - ✅ Command system + Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Y, Ctrl/Cmd+Shift+Z)
-- ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via `localStorage` v1 format
+- ✅ JSON save / load (Ctrl/Cmd+S, Ctrl/Cmd+O) via Electron file dialogs
 - ✅ Object layers + Entity placement (sprite, spawn-point, door, pickup)
 - ✅ Collision layers + box collider placement (drag-to-size)
+- ✅ Rect tool — fill + Shift outline, single Ctrl+Z per drag (R)
 - ✅ PropertiesPanel: live read-only view of the current selection
-- ✅ Editor UI: English / 简体中文 (MenuBar → View → Language)
+- ✅ Editor UI: English / 简体中文 / 日本語 (MenuBar → View → Language)
+- ✅ Workspace + Launcher (Electron-only): folder-based persistence, recents
 - ✅ Module-boundary ESLint enforcement
 
 ## Roadmap
@@ -128,7 +130,8 @@ npm run test:watch   # Vitest watch mode
 | 14   | Collision layer                                 | ✅     |
 | 15   | JSON import / export                            | ✅     |
 | 16   | Shortcuts (Ctrl+S / Z / Y / Delete / Space)     | ✅     |
-| 17   | Editor UI i18n (English / 简体中文)             | ✅     |
+| 17   | Editor UI i18n (English / 简体中文 / 日本語)   | ✅     |
+| 18   | Workspace + Launcher (Electron-only)           | ✅     |
 | 19   | Selection model + PropertiesPanel real data     | ✅     |
 
 Future editor types (Dialogue, Animation, Quest, Inventory, Skill,

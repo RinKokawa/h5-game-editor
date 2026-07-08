@@ -281,9 +281,70 @@ the compiler catches any path that mixes kinds. A field-based design
 ("`entityId?` + `colliderId?` + ... + a `kind` discriminator")
 re-introduces all the combinations a discriminated union removes.
 
-Next: **Step 21 — Inspector schema-driven edits** (untouched; the
-Inspector keeps showing the empty state until the schema-driven
-field-renderer architecture lands).
+**Step 18 — Workspace + Launcher** — completed. The editor now boots
+into a workspace picker (`<Launcher/>`) instead of mounting the
+editor unconditionally, and all document persistence is scoped to a
+folder the user owns.
+
+- A workspace = a folder the user chooses. The folder contains
+  `h5-editor.json` (the `WorkspaceConfig`) plus `documents/<id>.json`
+  files and an empty `assets/` skeleton. The schema supports a
+  `documents[]` table so a future multi-doc UI doesn't need to
+  migrate the on-disk shape; v0.1 ships exactly one document per
+  workspace.
+- `core/workspace/schema.ts` carries the pure types and layout
+  constants (`WorkspaceRef`, `WorkspaceConfig`, `RecentEntry`,
+  `WORKSPACE_CONFIG_FILENAME`, `MAX_RECENT_ENTRIES`, etc.). The
+  renderer and the Electron main process both import from here so a
+  filename / version bump has exactly one source of truth.
+- `state/workspaceStore.ts` holds the UI-only phase + the in-memory
+  mirror of recents. ESLint forbids `state/` from importing
+  `systems/`, so the store *cannot* drive IPC. The actual recents
+  load/save runs through `systems/persistence/recentWorkspaces.ts`
+  and is composed by the `<Launcher/>`.
+- `systems/persistence/workspaceIO.ts` is the workspace-scoped
+  orchestrator: `createNewWorkspace(name)` (folder picker + file
+  bootstrap, returns the ref + active doc id), `openExistingWorkspace`
+  (stat the config), `loadActiveDocument` (hydrate the document
+  store and reset selection / history).
+- `systems/persistence/documentIO.ts` is now strictly
+  workspace-scoped. Save writes to
+  `<workspace>/documents/<activeDocId>.json`; Load re-reads it (a
+  manual "revert to disk" gesture). The localStorage fallback from
+  Step 16 is **removed**: with a launcher, "no workspace, no
+  document" is the correct rule rather than a magic last-snapshot.
+  Outcomes discriminate on `path: string` (never null) reflecting
+  the new always-workspace-backed storage.
+- `electron/main.ts` + `electron/preload.ts` gained the dialog +
+  workspace + recents IPC surface (`dialog:pickFolder`,
+  `workspace:{create,stat,listDocuments,readDocument,writeDocument}`,
+  `recents:{load,save}`). Recents live in `app.getPath('userData')`
+  on the main side; the renderer never names the file.
+- `app/WorkspaceGate.tsx` selects `<Launcher/>` vs `<EditorShell/>`
+  on `workspaceStore.phase`. `app/launcher/Launcher.tsx` is the
+  full-screen UI (brand + actions + recent list). `app/App.tsx` is
+  now `<WorkspaceGate/>`. File → Back to Launcher (added in
+  `EditorShell.tsx`'s `fileActions`) returns to the launcher
+  without touching disk.
+
+**Why the Launcher sits in `app/`, not `panels/`.** The Launcher's
+whole reason to exist is to mediate between the React UI and
+Electron IPC (`systems/`); the ESLint boundary forbids `panels/`
+from importing `systems/`, so the only legal home is `app/`.
+`panels/` retains its "always passive consumer of core + state"
+identity.
+
+**Why the localStorage fallback was deleted rather than disabled.**
+A fallback that never fires is dead code. The launcher is the only
+legal entry point in Step 18; Ctrl+S / Ctrl+O outside the editor
+phase now log a clear error and stop, which is exactly what an
+intentional "no workspace, no document" rule should do.
+
+Next: **Step 19 — Unity scene importer spike** (the Unity
+`.unity` file parser and Tilemap→TileLayer mapping). Workspace
+schema is stable enough now that the importer can be a read-only
+step that *consumes* a workspace folder without modifying the
+schema.
 
 ## 14. Common pitfalls to avoid
 
@@ -305,6 +366,15 @@ field-renderer architecture lands).
   Extend the `Locale` union in `core/i18n/types.ts`, add the bundle
   to `bundles/`, and `AVAILABLE_LOCALES` is automatically picked up
   by the switcher via `Object.entries(NATIVE_NAMES)`.
+- ❌ Putting the `Launcher` in `panels/` so it sits next to the
+  other panels. → The Launcher's job is to talk to Electron IPC;
+  `panels/` is forbidden from `systems/`. The Launcher lives in
+  `app/` (sibling to `WorkspaceGate` and `EditorShell`).
+- ❌ "Re-enabling" the Step 16 localStorage document IO so the
+  vite dev server can boot without picking a workspace. → With
+  Step 18's launcher, "no workspace, no document" is the rule. The
+  localStorage path was deliberately deleted — re-adding it would
+  re-introduce the dual-backend split the workspace removes.
 
 ## 15. Questions to ask before adding a feature
 
