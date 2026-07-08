@@ -233,18 +233,28 @@ export function EditorShell() {
       labelKey: 'menu.file.save',
       shortcut: 'Ctrl+S',
       onClick: () => {
-        const outcome = saveDocument();
-        if (outcome.ok) log.info(ti18n('documentio.saved', { n: outcome.bytes }));
-        else log.error(ti18n('documentio.saveFailed', { error: outcome.error }));
+        void saveDocument().then((outcome) => {
+          if (outcome.ok) {
+            const where = outcome.path ? ` → ${outcome.path}` : '';
+            log.info(ti18n('documentio.saved', { n: outcome.bytes }) + where);
+          } else {
+            log.error(ti18n('documentio.saveFailed', { error: outcome.error }));
+          }
+        });
       },
     },
     {
       labelKey: 'menu.file.load',
       shortcut: 'Ctrl+O',
       onClick: () => {
-        const outcome = loadDocument();
-        if (outcome.ok) log.info(ti18n('documentio.loaded', { n: outcome.layerCount }));
-        else log.warn(ti18n('documentio.loadFailed', { error: outcome.error }));
+        void loadDocument().then((outcome) => {
+          if (outcome.ok) {
+            const where = outcome.path ? ` ← ${outcome.path}` : '';
+            log.info(ti18n('documentio.loaded', { n: outcome.layerCount }) + where);
+          } else {
+            log.warn(ti18n('documentio.loadFailed', { error: outcome.error }));
+          }
+        });
       },
     },
   ];

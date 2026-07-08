@@ -26,16 +26,18 @@ export class DocumentIOShortcuts {
     const key = event.key.toLowerCase();
     if (key === 's') {
       event.preventDefault();
-      const outcome = saveDocument();
-      if (outcome.ok) console.info(`[DocumentIO] saved (${outcome.bytes} bytes)`);
-      else console.error('[DocumentIO] save failed:', outcome.error);
+      void saveDocument().then((outcome) => {
+        if (outcome.ok) console.info(`[DocumentIO] saved (${outcome.bytes} bytes)`);
+        else console.error('[DocumentIO] save failed:', outcome.error);
+      });
       return;
     }
     if (key === 'o') {
       event.preventDefault();
-      const outcome = loadDocument();
-      if (outcome.ok) console.info(`[DocumentIO] loaded (${outcome.layerCount} layers)`);
-      else console.warn('[DocumentIO] load failed:', outcome.error);
+      void loadDocument().then((outcome) => {
+        if (outcome.ok) console.info(`[DocumentIO] loaded (${outcome.layerCount} layers)`);
+        else console.warn('[DocumentIO] load failed:', outcome.error);
+      });
     }
   };
 

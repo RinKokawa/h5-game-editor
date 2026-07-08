@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist-electron/electron/main.js",
   "description": "A long-term maintainable H5 game editor framework built with React, PixiJS, and Zustand.",
   "scripts": {
     "dev": "vite",
@@ -14,7 +15,13 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\" \"*.{ts,tsx,js,cjs,mjs,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" \"*.{ts,tsx,js,cjs,mjs,json,md}\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:electron-renderer": "vite build",
+    "build:electron-main": "tsc -p tsconfig.node.json",
+    "build:electron": "npm run build && npm run build:electron-main",
+    "electron:dev": "npm run build:electron-main && concurrently -k -n VITE,ELECTRON -c blue,magenta \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:package": "npm run build:electron && electron-builder",
+    "electron:start": "electron ."
   },
   "dependencies": {
     "pixi.js": "^8.6.0",
@@ -28,6 +35,9 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^10.0.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.13.0",
     "eslint-import-resolver-typescript": "^3.6.3",
     "eslint-plugin-import": "^2.31.0",
