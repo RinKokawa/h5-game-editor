@@ -5,8 +5,13 @@
  * matches `toolStore.activeToolId`. Tools never mutate the
  * Document directly — they build Commands and dispatch them via the
  * CommandBus.
+ *
+ * Step 24: every concrete tool implements {@link Tool} (re-exported
+ * from `@shared/tool`); the constructor is parameterless and the
+ * canvas reference is supplied via `attach(canvas)`.
  */
 
+export type { Tool } from '@shared/tool/Tool';
 export { BrushTool } from './BrushTool';
 export { EraserTool } from './EraserTool';
 export { PanTool } from './PanTool';

@@ -1,8 +1,10 @@
 /**
  * Core: Undo/Redo history stack.
  *
- * Pairs with Command Bus. The HistoryStack owns the executed commands and
- * exposes undo()/redo() based on a cursor. Coalescing is delegated to
- * individual Command implementations.
+ * The implementation lives in `core/command/HistoryStack.ts` (paired
+ * with `CommandBus`). This barrel re-exports the public surface so
+ * consumers can import from the canonical location
+ * `@core/history` instead of reaching into `core/command/`.
  */
-export {};
+
+export { HistoryStack } from '@core/command/HistoryStack';
