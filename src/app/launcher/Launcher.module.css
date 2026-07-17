@@ -9,6 +9,21 @@
   user-select: none;
 }
 
+/* Persistent banner shown when the renderer was launched without
+   Electron (i.e. via `npm run dev`). The two launcher actions need
+   the OS folder picker / workspace IPC bridge; without it they
+   silently fail. The banner explains the situation so the user
+   doesn't think the buttons are broken. */
+.electronBanner {
+  padding: 10px 64px;
+  background: #4a2c1a;
+  color: #f4d8b8;
+  font-size: 12px;
+  line-height: 1.4;
+  border-bottom: 1px solid #6b3e23;
+  flex-shrink: 0;
+}
+
 .body {
   flex: 1;
   display: grid;

@@ -78,7 +78,8 @@ declare global {
   }
 }
 
-export const isElectron = (): boolean => typeof window !== 'undefined' && window.h5 !== undefined;
+export const isElectron = (): boolean =>
+  typeof window !== 'undefined' && window.h5 !== undefined;
 
 // --- Document I/O ----------------------------------------------------
 

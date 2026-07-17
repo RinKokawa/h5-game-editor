@@ -30,6 +30,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useT } from '@core/i18n';
 import { useWorkspaceStore } from '@state/workspaceStore';
 import { log } from '@systems/diagnostics';
+import { isElectron } from '@systems/persistence/electronBridge';
 import {
   createNewWorkspace,
   loadActiveDocument,
@@ -136,11 +137,18 @@ export function Launcher(): React.ReactElement {
   const [showNewModal, setShowNewModal] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  // Resolved once on mount. The renderer only sees `window.h5` when
+  // it was loaded by the Electron preload script — `npm run dev`
+  // (Vite-only) never installs it, and the user is then stuck on the
+  // Launcher with no feedback. Surfacing this early is the difference
+  // between "the buttons silently do nothing" and "I know why".
+  const [electronAvailable, setElectronAvailable] = useState(true);
 
   // Pull recents once on mount. Each setState replaces the list, so
   // a StrictMode double-mount produces one extra IPC call but no
   // visible UI flicker (the recents list is the same content).
   useEffect(() => {
+    setElectronAvailable(isElectron());
     void loadRecents().then(setRecents);
   }, [setRecents]);
 
@@ -182,10 +190,18 @@ export function Launcher(): React.ReactElement {
   );
 
   const handleOpen = useCallback(async () => {
+    if (!electronAvailable) {
+      // The OS folder picker requires the Electron preload. Mirror
+      // the bridge-detected error so the user sees the same banner
+      // both via the persistent hint above and the inline error
+      // here.
+      setOpenError(t('launcher.error.noElectron'));
+      return;
+    }
     const folder = await pickFolder();
     if (!folder) return;
     await openPath(folder);
-  }, [openPath]);
+  }, [electronAvailable, openPath, t]);
 
   const handleNew = useCallback(() => {
     setShowNewModal(true);
@@ -227,6 +243,11 @@ export function Launcher(): React.ReactElement {
 
   return (
     <div className={styles.launcher}>
+      {!electronAvailable ? (
+        <div className={styles.electronBanner} role="status">
+          {t('launcher.error.noElectron')}
+        </div>
+      ) : null}
       <div className={styles.body}>
         <section className={styles.left}>
           <header className={styles.brand}>
@@ -234,7 +255,12 @@ export function Launcher(): React.ReactElement {
             <div className={styles.brandTagline}>{t('launcher.tagline')}</div>
           </header>
           <div className={styles.actions}>
-            <button type="button" className={styles.action} onClick={handleNew} disabled={opening}>
+            <button
+              type="button"
+              className={styles.action}
+              onClick={handleNew}
+              disabled={opening || !electronAvailable}
+            >
               <span className={styles.actionLabel}>{t('launcher.new')}</span>
               <span className={styles.actionHint}>{t('launcher.pathHint')}</span>
             </button>
@@ -244,7 +270,7 @@ export function Launcher(): React.ReactElement {
               onClick={() => {
                 void handleOpen();
               }}
-              disabled={opening}
+              disabled={opening || !electronAvailable}
             >
               <span className={styles.actionLabel}>{t('launcher.open')}</span>
             </button>

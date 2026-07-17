@@ -82,7 +82,8 @@ Requirements: Node ≥ 20.
 
 ```bash
 npm install
-npm run dev          # Vite dev server on http://localhost:5173
+npm run electron:dev # full editor: Vite + Electron (http://localhost:5173 inside the app)
+npm run dev          # Vite-only (browser preview; Launcher shows a "needs Electron" banner)
 npm run build        # production build
 npm run typecheck    # TypeScript only
 npm run lint         # ESLint
@@ -91,6 +92,13 @@ npm run format       # Prettier write
 npm run test         # Vitest (unit tests, once per file)
 npm run test:watch   # Vitest watch mode
 ```
+
+The editor is **Electron-only** — workspaces live in folders the user
+picks via the OS dialog, and the renderer talks to the filesystem
+through the `window.h5` bridge the preload exposes. Running
+`npm run dev` opens the Vite preview in a plain browser; the Launcher
+mounts but the **New Workspace** and **Open Folder…** actions are
+disabled with an inline hint to use `npm run electron:dev` instead.
 
 ## Current Capabilities (v0.1)
 

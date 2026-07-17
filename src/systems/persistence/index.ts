@@ -16,7 +16,7 @@
 
 export { saveDocument, loadDocument } from './documentIO';
 export type { SaveOutcome, LoadOutcome } from './documentIO';
-export { DocumentIOShortcuts } from './DocumentIOShortcuts';
+export { documentIOShortcuts } from './DocumentIOShortcuts';
 export {
   createNewWorkspace,
   loadActiveDocument,
