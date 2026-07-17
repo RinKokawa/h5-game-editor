@@ -1,124 +1,45 @@
 /**
- * CollisionLayerView — renders all visible CollisionLayers in document order.
+ * CollisionLayerView — renders all visible CollisionLayers in
+ * document order.
  *
- * Mirrors {@link ObjectLayerView}: one Pixi `Container` per
- * CollisionLayer, rebuilt on a rAF debounce. Each `box` collider is
- * drawn as a stroked rectangle; circle and polygon shapes are
- * skipped in v0.1 (the schema supports them but the user can only
- * place boxes via the Collider tool).
- *
- * Colliders render with a distinct visual style (dashed-feeling
- * outline + tinted fill) so collision geometry is visually separable
- * from object placement when both are visible.
+ * Extends {@link LayerView}: a `Container` per CollisionLayer, rebuilt
+ * on a rAF debounce. Each `box` collider is a stroked rectangle;
+ * circle and polygon shapes are skipped in v0.1 (the schema supports
+ * them but the user can only place boxes via the Collider tool).
  */
 
-import { Container, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
+import { LayerView } from '@canvas/layers/LayerView';
 import { useDocumentStore } from '@state/documentStore';
 
+
+import type { LayerNode } from '@canvas/layers/LayerView';
 import type { Collider } from '@editor/map/schema/collider';
 import type { ColliderId, LayerId } from '@editor/map/schema/ids';
-import type { CollisionLayer, Layer } from '@editor/map/schema/layer';
+import type { CollisionLayer } from '@editor/map/schema/layer';
+import type { Container} from 'pixi.js';
 
-const isCollisionLayer = (l: Layer): l is CollisionLayer => l.type === 'collision';
+export class CollisionLayerView extends LayerView<CollisionLayer> {
+  private readonly orderSnapshots = new Map<LayerId, readonly ColliderId[]>();
 
-interface LayerNode {
-  readonly container: Container;
-  lastColliderOrder: readonly ColliderId[];
-  lastVisible: boolean;
-}
-
-export class CollisionLayerView {
-  readonly container: Container;
-
-  private readonly layerNodes: Map<LayerId, LayerNode> = new Map();
-  private unsubscribes: Array<() => void> = [];
-  private rafId: number | null = null;
-  private destroyed = false;
-
-  constructor(parent: Container) {
-    this.container = new Container();
-    this.container.eventMode = 'none';
-
-    parent.addChild(this.container);
-
-    this.subscribeToStore();
-    this.scheduleRender();
+  protected override subscribeToSource(): () => void {
+    return useDocumentStore.subscribe(() => this.scheduleRender());
   }
 
-  destroy(): void {
-    if (this.destroyed) return;
-    this.destroyed = true;
-    for (const unsub of this.unsubscribes) unsub();
-    this.unsubscribes = [];
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-    for (const node of this.layerNodes.values()) {
-      node.container.destroy({ children: true });
-    }
-    this.layerNodes.clear();
-    if (this.container.parent) {
-      this.container.parent.removeChild(this.container);
-    }
-    this.container.destroy({ children: true });
+  protected override filterLayer = (l: { type: string }): l is CollisionLayer =>
+    l.type === 'collision';
+
+  protected override renderNode(node: LayerNode, layer: CollisionLayer): void {
+    const prev = this.orderSnapshots.get(layer.id);
+    if (prev && colliderOrderEqual(prev, layer.data.colliderOrder)) return;
+    rebuildColliders(node.container, layer.data.colliderOrder, useDocumentStore.getState().colliders);
+    this.orderSnapshots.set(layer.id, layer.data.colliderOrder);
   }
 
-  private subscribeToStore(): void {
-    this.unsubscribes.push(useDocumentStore.subscribe(() => this.scheduleRender()));
-  }
-
-  private scheduleRender(): void {
-    if (this.destroyed || this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      this.render();
-    });
-  }
-
-  private render(): void {
-    if (this.destroyed) return;
-
-    const { layers, colliders } = useDocumentStore.getState();
-    const visibleCollisionLayers = layers.filter(isCollisionLayer);
-
-    const incomingIds = new Set(visibleCollisionLayers.map((l) => l.id));
-    for (const [id, node] of this.layerNodes) {
-      if (!incomingIds.has(id)) {
-        node.container.destroy({ children: true });
-        this.layerNodes.delete(id);
-      }
-    }
-
-    for (const layer of visibleCollisionLayers) {
-      let node = this.layerNodes.get(layer.id);
-      if (!node) {
-        const c = new Container();
-        c.eventMode = 'none';
-        this.container.addChild(c);
-        node = { container: c, lastColliderOrder: [], lastVisible: true };
-        this.layerNodes.set(layer.id, node);
-      }
-      if (node.lastVisible !== layer.visible) {
-        node.container.visible = layer.visible;
-        node.lastVisible = layer.visible;
-      }
-      if (!colliderOrderEqual(node.lastColliderOrder, layer.data.colliderOrder)) {
-        rebuildColliders(node.container, layer.data.colliderOrder, colliders);
-        node.lastColliderOrder = layer.data.colliderOrder;
-      }
-    }
-
-    for (let i = 0; i < visibleCollisionLayers.length; i++) {
-      const layer = visibleCollisionLayers[i];
-      if (!layer) continue;
-      const node = this.layerNodes.get(layer.id);
-      if (!node) continue;
-      if (this.container.getChildIndex(node.container) !== i) {
-        this.container.addChildAt(node.container, i);
-      }
-    }
+  override destroy(): void {
+    super.destroy();
+    this.orderSnapshots.clear();
   }
 }
 

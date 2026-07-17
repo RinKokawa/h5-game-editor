@@ -59,6 +59,4 @@ export type {
 
 export type { MapData, MapMetadata } from './map';
 
-export type { Document, DocumentKind, SchemaVersion } from './document';
-
-export type { DocumentChange } from './events';
+export type { Document, DocumentKind, SchemaVersion, DocumentMeta } from './document';

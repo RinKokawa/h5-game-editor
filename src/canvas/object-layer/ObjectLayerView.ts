@@ -1,128 +1,46 @@
 /**
  * ObjectLayerView — renders all visible ObjectLayers in document order.
  *
- * Mirrors {@link TileLayerView}'s structure: one Pixi `Container` per
- * ObjectLayer, re-built on a rAF debounce. Each entity is drawn as a
- * tinted white rectangle sized to its `size`, with a thin outline so
- * adjacent entities are visually distinct. Rotation is not honored in
- * v0.1 — entities render axis-aligned. A real sprite swap lands with
- * the entity-renderer extension in a later step.
- *
- * Order matches the layer's `entityOrder` so z-stacking within the
- * layer is preserved.
+ * Extends {@link LayerView}: a `Container` per ObjectLayer, rebuilt on
+ * a rAF debounce. Each entity is a tinted white rectangle sized to
+ * `entity.size` with a thin outline so adjacent entities are visually
+ * distinct. Rotation is not honored in v0.1 — entities render axis-
+ * aligned. A real sprite swap lands with the entity-renderer extension
+ * in a later step.
  */
 
-import { Container, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
+import { LayerView } from '@canvas/layers/LayerView';
 import { colorForEntityType } from '@editor/map/palette/defaultEntityTypes';
 import { useDocumentStore } from '@state/documentStore';
 
+
+import type { LayerNode } from '@canvas/layers/LayerView';
 import type { Entity } from '@editor/map/schema/entity';
 import type { EntityId, LayerId } from '@editor/map/schema/ids';
-import type { Layer, ObjectLayer } from '@editor/map/schema/layer';
+import type { ObjectLayer } from '@editor/map/schema/layer';
+import type { Container} from 'pixi.js';
 
-const isObjectLayer = (l: Layer): l is ObjectLayer => l.type === 'object';
+export class ObjectLayerView extends LayerView<ObjectLayer> {
+  private readonly orderSnapshots = new Map<LayerId, readonly EntityId[]>();
 
-interface LayerNode {
-  readonly container: Container;
-  lastEntityOrder: readonly EntityId[];
-  lastVisible: boolean;
-}
-
-export class ObjectLayerView {
-  readonly container: Container;
-
-  private readonly layerNodes: Map<LayerId, LayerNode> = new Map();
-  private unsubscribes: Array<() => void> = [];
-  private rafId: number | null = null;
-  private destroyed = false;
-
-  constructor(parent: Container) {
-    this.container = new Container();
-    this.container.eventMode = 'none';
-
-    parent.addChild(this.container);
-
-    this.subscribeToStore();
-    this.scheduleRender();
+  protected override subscribeToSource(): () => void {
+    return useDocumentStore.subscribe(() => this.scheduleRender());
   }
 
-  destroy(): void {
-    if (this.destroyed) return;
-    this.destroyed = true;
-    for (const unsub of this.unsubscribes) unsub();
-    this.unsubscribes = [];
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-    for (const node of this.layerNodes.values()) {
-      node.container.destroy({ children: true });
-    }
-    this.layerNodes.clear();
-    if (this.container.parent) {
-      this.container.parent.removeChild(this.container);
-    }
-    this.container.destroy({ children: true });
+  protected override filterLayer = (l: { type: string }): l is ObjectLayer => l.type === 'object';
+
+  protected override renderNode(node: LayerNode, layer: ObjectLayer): void {
+    const prev = this.orderSnapshots.get(layer.id);
+    if (prev && entityOrderEqual(prev, layer.data.entityOrder)) return;
+    rebuildEntities(node.container, layer.data.entityOrder, useDocumentStore.getState().entities);
+    this.orderSnapshots.set(layer.id, layer.data.entityOrder);
   }
 
-  private subscribeToStore(): void {
-    this.unsubscribes.push(useDocumentStore.subscribe(() => this.scheduleRender()));
-  }
-
-  private scheduleRender(): void {
-    if (this.destroyed || this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      this.render();
-    });
-  }
-
-  private render(): void {
-    if (this.destroyed) return;
-
-    const { layers, entities } = useDocumentStore.getState();
-    const visibleObjectLayers = layers.filter(isObjectLayer);
-
-    // 1. Drop sub-containers for layers that no longer exist.
-    const incomingIds = new Set(visibleObjectLayers.map((l) => l.id));
-    for (const [id, node] of this.layerNodes) {
-      if (!incomingIds.has(id)) {
-        node.container.destroy({ children: true });
-        this.layerNodes.delete(id);
-      }
-    }
-
-    // 2. Add new layers, update existing ones.
-    for (const layer of visibleObjectLayers) {
-      let node = this.layerNodes.get(layer.id);
-      if (!node) {
-        const c = new Container();
-        c.eventMode = 'none';
-        this.container.addChild(c);
-        node = { container: c, lastEntityOrder: [], lastVisible: true };
-        this.layerNodes.set(layer.id, node);
-      }
-      if (node.lastVisible !== layer.visible) {
-        node.container.visible = layer.visible;
-        node.lastVisible = layer.visible;
-      }
-      if (!entityOrderEqual(node.lastEntityOrder, layer.data.entityOrder)) {
-        rebuildEntities(node.container, layer.data.entityOrder, entities);
-        node.lastEntityOrder = layer.data.entityOrder;
-      }
-    }
-
-    // 3. Re-order sub-containers to match layer array order.
-    for (let i = 0; i < visibleObjectLayers.length; i++) {
-      const layer = visibleObjectLayers[i];
-      if (!layer) continue;
-      const node = this.layerNodes.get(layer.id);
-      if (!node) continue;
-      if (this.container.getChildIndex(node.container) !== i) {
-        this.container.addChildAt(node.container, i);
-      }
-    }
+  override destroy(): void {
+    super.destroy();
+    this.orderSnapshots.clear();
   }
 }
 
