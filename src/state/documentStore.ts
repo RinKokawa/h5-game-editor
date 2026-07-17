@@ -8,8 +8,12 @@
  * CommandBus, which calls the Service, which calls the primitives
  * below.
  *
- * The remaining "view-only" actions (`setActiveLayer`, `setTileSize`,
- * `setMapSize`) don't affect document content and stay here.
+ * Step 21: project-level scalars (`tileSize`, `mapSize`) live under
+ * the `meta` field of a {@link DocumentMeta}. They mutate only via
+ * `DocumentService.setTileSize` / `setMapSize` / `setMeta` (which
+ * forward to {@link SetTileSizeCommand} / {@link SetMapSizeCommand}).
+ * The view-only `setActiveLayer` is the sole UI-direct setter that
+ * remains — it's selection / focus, not project data.
  */
 
 import { create } from 'zustand';
@@ -19,6 +23,7 @@ import { encodeTileCoord } from '@editor/map/schema/tile';
 
 import type { TileLayerEntry } from '@core/document/DocumentService';
 import type { Collider } from '@editor/map/schema/collider';
+import type { DocumentMeta } from '@editor/map/schema/document';
 import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
 import type {
@@ -36,9 +41,14 @@ export const DEFAULT_TILE_SIZE = 32;
 export const DEFAULT_MAP_TILES_WIDE = 60;
 export const DEFAULT_MAP_TILES_TALL = 34;
 
-const DEFAULT_MAP_SIZE: Size = {
+export const DEFAULT_MAP_SIZE: Size = {
   width: DEFAULT_TILE_SIZE * DEFAULT_MAP_TILES_WIDE,
   height: DEFAULT_TILE_SIZE * DEFAULT_MAP_TILES_TALL,
+};
+
+export const DEFAULT_DOCUMENT_META: DocumentMeta = {
+  tileSize: DEFAULT_TILE_SIZE,
+  mapSize: DEFAULT_MAP_SIZE,
 };
 
 /** Stub tileset for the placeholder palette (Step 8). */
@@ -94,8 +104,8 @@ const pickNextActive = (layers: ReadonlyArray<Layer>): LayerId => {
 };
 
 export interface DocumentState {
-  readonly tileSize: number;
-  readonly mapSize: Size;
+  /** Project-level scalars (Step 21). Mutate only via Commands. */
+  readonly meta: DocumentMeta;
   readonly layers: ReadonlyArray<Layer>;
   readonly activeLayerId: LayerId;
   /** Entity table — identity-bearing objects placed on Object layers. */
@@ -104,13 +114,16 @@ export interface DocumentState {
   readonly colliders: ReadonlyMap<ColliderId, Collider>;
 
   // ── view-only setters (not Commands) ──────────────────────────────────
-  readonly setTileSize: (size: number) => void;
-  readonly setMapSize: (size: Size) => void;
+  // `setActiveLayer` is selection / focus only; it does not mutate
+  // document content. tileSize / mapSize are document data and must
+  // go through Commands — there is no longer a setter for them on
+  // the store. The primitives they call live below as `setMeta`.
   readonly setActiveLayer: (id: LayerId) => void;
 
   // ── DocumentService primitives ────────────────────────────────────────
   // These are intentionally not part of the public UI API. Callers go
   // through DocumentService → CommandBus → Command.
+  readonly setMeta: (meta: DocumentMeta) => void;
   readonly setTile: (layerId: LayerId, coord: TileCoord, entry: TileLayerEntry | null) => void;
   readonly getTile: (layerId: LayerId, coord: TileCoord) => TileLayerEntry | null;
   readonly addLayer: (layer: Layer, makeActive: boolean) => void;
@@ -131,18 +144,25 @@ export interface DocumentState {
   readonly removeCollider: (id: ColliderId) => Collider | null;
   readonly setCollider: (collider: Collider) => void;
   readonly getCollider: (id: ColliderId) => Collider | null;
+
+  /**
+   * Restore the Document to its initial state (default DocumentMeta /
+   * layers / empty entities / empty colliders). Called
+   * by `workspaceStore.resetEditorState` when leaving the editor
+   * so the Launcher phase doesn't leak stale data into a new
+   * workspace that never went through `loadActiveDocument`.
+   */
+  readonly reset: () => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
-  tileSize: DEFAULT_TILE_SIZE,
-  mapSize: DEFAULT_MAP_SIZE,
+  meta: DEFAULT_DOCUMENT_META,
   layers: INITIAL_LAYERS,
   activeLayerId: INITIAL_ACTIVE,
   entities: new Map<EntityId, Entity>(),
   colliders: new Map<ColliderId, Collider>(),
 
-  setTileSize: (size) => set({ tileSize: size }),
-  setMapSize: (size) => set({ mapSize: size }),
+  setMeta: (meta) => set({ meta }),
 
   setActiveLayer: (id) =>
     set((state) => (state.layers.some((l) => l.id === id) ? { activeLayerId: id } : state)),
@@ -357,4 +377,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }),
 
   getCollider: (id) => get().colliders.get(id) ?? null,
+
+  reset: () =>
+    set({
+      meta: DEFAULT_DOCUMENT_META,
+      layers: INITIAL_LAYERS,
+      activeLayerId: INITIAL_ACTIVE,
+      entities: new Map<EntityId, Entity>(),
+      colliders: new Map<ColliderId, Collider>(),
+    }),
 }));

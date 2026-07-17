@@ -73,10 +73,11 @@ import { useLayoutStore } from '@state/layoutStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
-import { DocumentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
-import { HistoryShortcuts } from '@systems/shortcut/HistoryShortcuts';
-import { SelectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
-import { ToolShortcuts } from '@systems/shortcut/ToolShortcuts';
+import { documentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
+import { historyShortcuts } from '@systems/shortcut/HistoryShortcuts';
+import { ShortcutRegistry } from '@systems/shortcut/index';
+import { selectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
+import { toolShortcuts } from '@systems/shortcut/ToolShortcuts';
 
 import styles from './EditorShell.module.css';
 
@@ -111,14 +112,12 @@ export function EditorShell() {
 
   useEffect(() => {
     installHistorySubscriber();
-    const historyShortcuts = new HistoryShortcuts();
-    const selectionShortcuts = new SelectionShortcuts();
-    const toolShortcuts = new ToolShortcuts();
-    const documentIOShortcuts = new DocumentIOShortcuts();
-    historyShortcuts.attach();
-    selectionShortcuts.attach();
-    toolShortcuts.attach();
-    documentIOShortcuts.attach();
+    const shortcutRegistry = new ShortcutRegistry();
+    shortcutRegistry.registerAll(historyShortcuts);
+    shortcutRegistry.registerAll(selectionShortcuts);
+    shortcutRegistry.registerAll(toolShortcuts);
+    shortcutRegistry.registerAll(documentIOShortcuts);
+    shortcutRegistry.attach();
 
     // Wire the log subsystem -> consoleStore so ConsolePanel renders
     // every line. `app/` is the only layer that may import both
@@ -129,10 +128,7 @@ export function EditorShell() {
     log.info(ti18n('console.noDocument'));
 
     return () => {
-      historyShortcuts.detach();
-      selectionShortcuts.detach();
-      toolShortcuts.detach();
-      documentIOShortcuts.detach();
+      shortcutRegistry.detach();
       unsubLog();
       uninstallHistorySubscriber();
     };
@@ -167,18 +163,25 @@ export function EditorShell() {
         collisionLayerRef.current = new CollisionLayerView(camera.worldContainer);
         selectionRef.current = new SelectionOverlay(
           camera.worldContainer,
-          () => useDocumentStore.getState().tileSize,
+          () => useDocumentStore.getState().meta.tileSize,
         );
 
         const canvas = renderer.getCanvas();
         if (canvas) {
-          brushToolRef.current = new BrushTool(canvas);
-          eraserToolRef.current = new EraserTool(canvas);
-          panToolRef.current = new PanTool(canvas);
-          selectToolRef.current = new SelectTool(canvas);
-          entityToolRef.current = new EntityTool(canvas);
-          colliderToolRef.current = new ColliderTool(canvas);
-          rectToolRef.current = new RectTool(canvas);
+          brushToolRef.current = new BrushTool();
+          eraserToolRef.current = new EraserTool();
+          panToolRef.current = new PanTool();
+          selectToolRef.current = new SelectTool();
+          entityToolRef.current = new EntityTool();
+          colliderToolRef.current = new ColliderTool();
+          rectToolRef.current = new RectTool();
+          brushToolRef.current.attach(canvas);
+          eraserToolRef.current.attach(canvas);
+          panToolRef.current.attach(canvas);
+          selectToolRef.current.attach(canvas);
+          entityToolRef.current.attach(canvas);
+          colliderToolRef.current.attach(canvas);
+          rectToolRef.current.attach(canvas);
         }
       })
       .catch((err: unknown) => {
@@ -190,19 +193,19 @@ export function EditorShell() {
 
     return () => {
       cancelled = true;
-      brushToolRef.current?.destroy();
+      brushToolRef.current?.detach();
       brushToolRef.current = null;
-      eraserToolRef.current?.destroy();
+      eraserToolRef.current?.detach();
       eraserToolRef.current = null;
-      panToolRef.current?.destroy();
+      panToolRef.current?.detach();
       panToolRef.current = null;
-      selectToolRef.current?.destroy();
+      selectToolRef.current?.detach();
       selectToolRef.current = null;
-      entityToolRef.current?.destroy();
+      entityToolRef.current?.detach();
       entityToolRef.current = null;
-      colliderToolRef.current?.destroy();
+      colliderToolRef.current?.detach();
       colliderToolRef.current = null;
-      rectToolRef.current?.destroy();
+      rectToolRef.current?.detach();
       rectToolRef.current = null;
       selectionRef.current?.destroy();
       selectionRef.current = null;

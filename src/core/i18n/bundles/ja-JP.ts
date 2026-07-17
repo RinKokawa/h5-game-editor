@@ -138,13 +138,18 @@ const jaJP: Bundle = {
     'タイル、エンティティ、またはコライダーを選択してプロパティを確認してください。',
   'properties.id': 'id',
   'properties.type': 'タイプ',
+  'properties.name': '名前',
+  'properties.kind': '種別',
   'properties.position': '位置',
   'properties.size': 'サイズ',
   'properties.rotation': '回転',
+  'properties.radius': '半径',
+  'properties.vertices': '頂点数',
   'properties.layer': 'レイヤー',
   'properties.cells': 'セル',
   'properties.entityCount': 'エンティティ数',
   'properties.colliderCount': 'コライダー数',
+  'properties.stale': '選択は既に存在しません。',
 
   // Palette — per-tile swatch labels (id 0 は消しゴム)
   'palette.entry.0': '消しゴム',
@@ -188,7 +193,8 @@ const jaJP: Bundle = {
   'launcher.remove': '一覧から削除',
   'launcher.invalid': 'このフォルダーは有効なワークスペースではありません。',
   'launcher.error.generic': 'ワークスペースを開けません:{error}',
-  'launcher.error.noElectron': 'ワークスペースは Electron デスクトップ版が必要です。',
+  'launcher.error.noElectron':
+    'ワークスペースには Electron デスクトップビルドが必要です。`npm run electron:dev` を実行してエディタを起動してください。',
   'launcher.workspace.opened': '[Workspace] ワークスペースを開きました:「{name}」',
   'launcher.workspace.created': '[Workspace] ワークスペースを作成しました:「{name}」',
 };

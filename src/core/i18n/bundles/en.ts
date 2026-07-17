@@ -128,13 +128,18 @@ const en: Bundle = {
   'properties.empty.hint': 'Select a tile, entity, or collider to inspect its properties.',
   'properties.id': 'id',
   'properties.type': 'type',
+  'properties.name': 'name',
+  'properties.kind': 'kind',
   'properties.position': 'position',
   'properties.size': 'size',
   'properties.rotation': 'rotation',
+  'properties.radius': 'radius',
+  'properties.vertices': 'vertices',
   'properties.layer': 'layer',
   'properties.cells': 'cells',
   'properties.entityCount': 'entities',
   'properties.colliderCount': 'colliders',
+  'properties.stale': 'Selection no longer exists.',
 
   // Palette — per-tile swatch labels (id 0 is the eraser)
   'palette.entry.0': 'Eraser',
@@ -178,7 +183,8 @@ const en: Bundle = {
   'launcher.remove': 'Remove from list',
   'launcher.invalid': 'This folder is no longer a valid workspace.',
   'launcher.error.generic': 'Could not open workspace: {error}',
-  'launcher.error.noElectron': 'Workspaces require the Electron desktop build.',
+  'launcher.error.noElectron':
+    'Workspaces require the Electron desktop build. Run `npm run electron:dev` to launch the editor.',
   'launcher.workspace.opened': '[Workspace] opened "{name}"',
   'launcher.workspace.created': '[Workspace] created "{name}"',
 };

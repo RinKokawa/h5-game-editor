@@ -127,13 +127,18 @@ const zhCN: Bundle = {
   'properties.empty.hint': '选中瓦片、实体或碰撞体后可在此查看其属性。',
   'properties.id': '编号',
   'properties.type': '类型',
+  'properties.name': '名称',
+  'properties.kind': '种类',
   'properties.position': '位置',
   'properties.size': '尺寸',
   'properties.rotation': '旋转',
+  'properties.radius': '半径',
+  'properties.vertices': '顶点数',
   'properties.layer': '所在图层',
   'properties.cells': '单元格',
   'properties.entityCount': '实体数',
   'properties.colliderCount': '碰撞体数',
+  'properties.stale': '当前选区已不存在。',
 
   // Palette — per-tile swatch labels (id 0 是橡皮)
   'palette.entry.0': '橡皮',
@@ -177,7 +182,7 @@ const zhCN: Bundle = {
   'launcher.remove': '从列表中移除',
   'launcher.invalid': '该文件夹已不再是有效的工作区。',
   'launcher.error.generic': '无法打开工作区:{error}',
-  'launcher.error.noElectron': '工作区需要 Electron 桌面版。',
+  'launcher.error.noElectron': '工作区需要 Electron 桌面版。请运行 `npm run electron:dev` 启动编辑器。',
   'launcher.workspace.opened': '[Workspace] 已打开"{name}"',
   'launcher.workspace.created': '[Workspace] 已创建"{name}"',
 };

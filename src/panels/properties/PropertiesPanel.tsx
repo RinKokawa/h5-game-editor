@@ -19,6 +19,7 @@
  * fire on either change.
  */
 
+import { useT } from '@core/i18n';
 import { decodeTileCoord } from '@editor/map/schema/tile';
 import { useDocumentStore } from '@state/documentStore';
 import { useSelectionStore } from '@state/selectionStore';
@@ -31,12 +32,13 @@ import type { TileCoord } from '@editor/map/schema/geometry';
 import type { LayerId, TileCoordKey } from '@editor/map/schema/ids';
 
 export function PropertiesPanel() {
+  const t = useT();
   const selection = useSelectionStore((s) => s.selection);
 
   if (!selection) {
     return (
       <div className={styles.panel} data-testid="properties-empty">
-        <p className={styles.empty}>Select a tile, entity, or collider.</p>
+        <p className={styles.empty}>{t('properties.empty.hint')}</p>
       </div>
     );
   }
@@ -51,11 +53,12 @@ export function PropertiesPanel() {
 }
 
 const EntityRows = ({ entityId }: { entityId: Entity['id'] }) => {
+  const t = useT();
   const entity = useDocumentStore((s) => s.entities.get(entityId));
   if (!entity) {
     return (
       <div className={styles.panel} data-testid="properties-stale">
-        <p className={styles.empty}>Selection no longer exists.</p>
+        <p className={styles.empty}>{t('properties.stale')}</p>
       </div>
     );
   }
@@ -63,12 +66,12 @@ const EntityRows = ({ entityId }: { entityId: Entity['id'] }) => {
     <div className={styles.panel} data-testid="properties-entity">
       <table className={styles.table}>
         <tbody>
-          <Row label="ID" value={entity.id} />
-          <Row label="Type" value={entity.type} />
-          <Row label="Name" value={entity.name} />
-          <Row label="Position" value={formatPoint(entity.position)} />
-          <Row label="Size" value={formatSize(entity.size)} />
-          <Row label="Rotation" value={`${formatDegrees(entity.rotation)}°`} />
+          <Row label={t('properties.id')} value={entity.id} />
+          <Row label={t('properties.type')} value={entity.type} />
+          <Row label={t('properties.name')} value={entity.name} />
+          <Row label={t('properties.position')} value={formatPoint(entity.position)} />
+          <Row label={t('properties.size')} value={formatSize(entity.size)} />
+          <Row label={t('properties.rotation')} value={`${formatDegrees(entity.rotation)}°`} />
         </tbody>
       </table>
     </div>
@@ -76,11 +79,12 @@ const EntityRows = ({ entityId }: { entityId: Entity['id'] }) => {
 };
 
 const ColliderRows = ({ colliderId }: { colliderId: Collider['id'] }) => {
+  const t = useT();
   const collider = useDocumentStore((s) => s.colliders.get(colliderId));
   if (!collider) {
     return (
       <div className={styles.panel} data-testid="properties-stale">
-        <p className={styles.empty}>Selection no longer exists.</p>
+        <p className={styles.empty}>{t('properties.stale')}</p>
       </div>
     );
   }
@@ -88,20 +92,20 @@ const ColliderRows = ({ colliderId }: { colliderId: Collider['id'] }) => {
     <div className={styles.panel} data-testid="properties-collider">
       <table className={styles.table}>
         <tbody>
-          <Row label="ID" value={collider.id} />
-          <Row label="Type" value={collider.type} />
-          <Row label="Kind" value={collider.kind} />
-          <Row label="Name" value={collider.name} />
-          <Row label="Position" value={formatPoint(collider.position)} />
+          <Row label={t('properties.id')} value={collider.id} />
+          <Row label={t('properties.type')} value={collider.type} />
+          <Row label={t('properties.kind')} value={collider.kind} />
+          <Row label={t('properties.name')} value={collider.name} />
+          <Row label={t('properties.position')} value={formatPoint(collider.position)} />
           {collider.type === 'box' ? (
             <>
-              <Row label="Size" value={formatSize(collider.size)} />
-              <Row label="Rotation" value={`${formatDegrees(collider.rotation)}°`} />
+              <Row label={t('properties.size')} value={formatSize(collider.size)} />
+              <Row label={t('properties.rotation')} value={`${formatDegrees(collider.rotation)}°`} />
             </>
           ) : collider.type === 'circle' ? (
-            <Row label="Radius" value={`${Math.round(collider.radius)}px`} />
+            <Row label={t('properties.radius')} value={`${Math.round(collider.radius)}px`} />
           ) : (
-            <Row label="Vertices" value={String(collider.vertices.length)} />
+            <Row label={t('properties.vertices')} value={String(collider.vertices.length)} />
           )}
         </tbody>
       </table>
@@ -116,11 +120,12 @@ const TileRows = ({
   layerId: LayerId;
   cellKeys: ReadonlySet<TileCoordKey>;
 }) => {
+  const t = useT();
   const layer = useDocumentStore((s) => s.layers.find((l) => l.id === layerId));
   if (!layer || layer.type !== 'tile') {
     return (
       <div className={styles.panel} data-testid="properties-stale">
-        <p className={styles.empty}>Selection no longer exists.</p>
+        <p className={styles.empty}>{t('properties.stale')}</p>
       </div>
     );
   }
@@ -133,8 +138,8 @@ const TileRows = ({
     <div className={styles.panel} data-testid="properties-tiles">
       <table className={styles.table}>
         <tbody>
-          <Row label="Layer" value={layer.name} />
-          <Row label="Cells" value={String(coords.length)} />
+          <Row label={t('properties.layer')} value={layer.name} />
+          <Row label={t('properties.cells')} value={String(coords.length)} />
           {coords.map((c) => {
             const key: TileCoordKey = `${c.x},${c.y}` as TileCoordKey;
             const placed = layer.data.tiles.get(key);

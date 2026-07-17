@@ -19,11 +19,18 @@
  * store only exposes the in-memory mirror + a setter; the `<Launcher/>`
  * pulls them together by calling `loadRecents()` on mount and
  * `pushRecent()` / `removeRecent()` on click.
+ *
+ * `resetEditorState` orchestrates a full editor-side wipe
+ * (selection + history + Document) so callers — including `leave`
+ * and `loadActiveDocument` — never forget a step.
  */
 
 import { create } from 'zustand';
 
+import { commandBus } from '@core/command/commandBusSingleton';
 import { asDocumentId } from '@editor/map/schema/ids';
+import { useDocumentStore } from '@state/documentStore';
+import { useSelectionStore } from '@state/selectionStore';
 
 import type { RecentEntry, WorkspaceRef } from '@core/workspace/schema';
 import type { DocumentId } from '@editor/map/schema/ids';
@@ -43,8 +50,15 @@ export interface WorkspaceState {
    */
   readonly enter: (ref: WorkspaceRef, activeDocId: DocumentId) => void;
 
-  /** Back to the launcher. Does not touch on-disk files. */
+  /** Back to the launcher. Resets selection + history + Document. */
   readonly leave: () => void;
+
+  /**
+   * Wipe editor-side state: clear selection, clear command history,
+   * reset the Document to its seed. Idempotent and safe to call
+   * from any phase. Does not touch on-disk files.
+   */
+  readonly resetEditorState: () => void;
 
   /** Replace the in-memory recents mirror (called by Launcher on load). */
   readonly setRecents: (entries: ReadonlyArray<RecentEntry>) => void;
@@ -61,7 +75,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   },
 
   leave: () => {
+    useSelectionStore.getState().clear();
+    commandBus.clearHistory();
+    useDocumentStore.getState().reset();
     set({ phase: 'launcher', current: null, activeDocId: null });
+  },
+
+  resetEditorState: () => {
+    useSelectionStore.getState().clear();
+    commandBus.clearHistory();
+    useDocumentStore.getState().reset();
   },
 
   setRecents: (entries) => {
