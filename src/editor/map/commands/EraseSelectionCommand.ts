@@ -18,7 +18,6 @@ import { decodeTileCoord } from '@editor/map/schema/tile';
 import { useSelectionStore } from '@state/selectionStore';
 
 import { EraseTileCommand } from './EraseTileCommand';
-import { PlaceTileCommand } from './PlaceTileCommand';
 
 import type { Command } from '@core/command/Command';
 import type { DocumentService } from '@core/document/DocumentService';
@@ -68,7 +67,7 @@ export class EraseSelectionCommand implements Command {
     for (let i = this.captured.length - 1; i >= 0; i--) {
       const c = this.captured[i];
       if (!c) continue;
-      new PlaceTileCommand(c.layerId, c.coord, c.entry).undo(service);
+      service.setTile(c.layerId, c.coord, c.entry);
     }
     if (this.prevLayer !== null) {
       useSelectionStore.getState().setTileSelection(this.prevLayer, this.prevCells);
