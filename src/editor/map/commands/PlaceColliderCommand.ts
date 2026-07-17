@@ -2,10 +2,9 @@
  * PlaceColliderCommand — add a Collider to the colliders table and
  * append its id to the given Collision layer's `colliderOrder`.
  *
- * v0.1 simplification: the id is always fresh (mint via
- * {@link placeCollider}). The Command assumes the collider does not
- * already exist and the id is not already in the layer's order.
- * Same pattern as {@link PlaceEntityCommand}.
+ * Thin wrapper around {@link PlacePlacedObjectCommand}. The id is
+ * always fresh (mint via {@link placeCollider}). Same shape as
+ * {@link PlaceEntityCommand}.
  *
  * v0.1 supports box colliders only — circle / polygon land with
  * future steps. The Command takes a `BoxCollider` value; future
@@ -14,31 +13,34 @@
 
 import { asColliderId } from '@editor/map/schema/ids';
 
-import type { Command } from '@core/command/Command';
+import { PlacePlacedObjectCommand } from './PlacePlacedObjectCommand';
+
 import type { DocumentService } from '@core/document/DocumentService';
 import type { BoxCollider } from '@editor/map/schema/collider';
-import type { LayerId } from '@editor/map/schema/ids';
+import type { ColliderId, LayerId } from '@editor/map/schema/ids';
 
-export class PlaceColliderCommand implements Command {
-  readonly kind = 'collider:place';
+const colliderOps = {
+  add: (service: DocumentService, c: BoxCollider): void => {
+    service.addCollider(c);
+  },
+  appendToLayer: (service: DocumentService, layerId: LayerId, id: ColliderId): void => {
+    service.appendToCollisionLayer(layerId, id);
+  },
+  removeFromLayer: (service: DocumentService, layerId: LayerId, id: ColliderId): void => {
+    service.removeFromCollisionLayer(layerId, id);
+  },
+  remove: (service: DocumentService, id: ColliderId): void => {
+    service.removeCollider(id);
+  },
+};
 
-  constructor(
-    private readonly layerId: LayerId,
-    private readonly collider: BoxCollider,
-  ) {}
+export class PlaceColliderCommand extends PlacePlacedObjectCommand<LayerId, ColliderId, BoxCollider> {
+  constructor(layerId: LayerId, collider: BoxCollider) {
+    super('collider:place', layerId, collider, colliderOps);
+  }
 
   get placedCollider(): BoxCollider {
-    return this.collider;
-  }
-
-  do(service: DocumentService): void {
-    service.addCollider(this.collider);
-    service.appendToCollisionLayer(this.layerId, this.collider.id);
-  }
-
-  undo(service: DocumentService): void {
-    service.removeFromCollisionLayer(this.layerId, this.collider.id);
-    service.removeCollider(this.collider.id);
+    return this.placed;
   }
 }
 

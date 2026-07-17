@@ -20,8 +20,7 @@ import type { BoxCollider } from '@editor/map/schema/collider';
 
 const resetStore = (): void => {
   useDocumentStore.setState({
-    tileSize: 32,
-    mapSize: { width: 32 * 60, height: 32 * 34 },
+    meta: { tileSize: 32, mapSize: { width: 32 * 60, height: 32 * 34 } },
     layers: [
       {
         id: asLayerId('seed.tile'),

@@ -2,10 +2,11 @@
  * PlaceEntityCommand — add an Entity to the entities table and append
  * its id to the given Object layer's `entityOrder`.
  *
- * v0.1 simplification: the id is always fresh (mint via
- * {@link placeEntity}). The Command assumes the entity does not
- * already exist and the id is not already in the layer's order, so
- * `do` is unconditional and `undo` is unconditional removal.
+ * Thin wrapper around {@link PlacePlacedObjectCommand}. The id is
+ * always fresh (mint via {@link placeEntity}). The Command assumes
+ * the entity does not already exist and the id is not already in the
+ * layer's order, so `do` is unconditional and `undo` is unconditional
+ * removal.
  *
  * If a future caller re-uses an existing id, `do` will overwrite the
  * existing entity and `undo` will leave the new entity in place —
@@ -14,32 +15,35 @@
 
 import { asEntityId } from '@editor/map/schema/ids';
 
-import type { Command } from '@core/command/Command';
+import { PlacePlacedObjectCommand } from './PlacePlacedObjectCommand';
+
 import type { DocumentService } from '@core/document/DocumentService';
 import type { Entity } from '@editor/map/schema/entity';
-import type { LayerId } from '@editor/map/schema/ids';
+import type { EntityId, LayerId } from '@editor/map/schema/ids';
 
-export class PlaceEntityCommand implements Command {
-  readonly kind = 'entity:place';
+const entityOps = {
+  add: (service: DocumentService, e: Entity): void => {
+    service.addEntity(e);
+  },
+  appendToLayer: (service: DocumentService, layerId: LayerId, id: EntityId): void => {
+    service.appendToObjectLayer(layerId, id);
+  },
+  removeFromLayer: (service: DocumentService, layerId: LayerId, id: EntityId): void => {
+    service.removeFromObjectLayer(layerId, id);
+  },
+  remove: (service: DocumentService, id: EntityId): void => {
+    service.removeEntity(id);
+  },
+};
 
-  constructor(
-    private readonly layerId: LayerId,
-    private readonly entity: Entity,
-  ) {}
+export class PlaceEntityCommand extends PlacePlacedObjectCommand<LayerId, EntityId, Entity> {
+  constructor(layerId: LayerId, entity: Entity) {
+    super('entity:place', layerId, entity, entityOps);
+  }
 
   /** The entity this command will place. Exposed for tests / inspectors. */
   get placedEntity(): Entity {
-    return this.entity;
-  }
-
-  do(service: DocumentService): void {
-    service.addEntity(this.entity);
-    service.appendToObjectLayer(this.layerId, this.entity.id);
-  }
-
-  undo(service: DocumentService): void {
-    service.removeFromObjectLayer(this.layerId, this.entity.id);
-    service.removeEntity(this.entity.id);
+    return this.placed;
   }
 }
 

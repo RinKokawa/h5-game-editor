@@ -1,28 +1,18 @@
 /**
  * AddTileLayerCommand — prepend a new TileLayer to the Document.
  *
- * `do` adds it (optionally making it active); `undo` removes it.
- * The caller is responsible for constructing the Layer value — the
- * Command just inserts and removes.
+ * Thin wrapper around {@link AddLayerCommand} that fixes the
+ * `kind` discriminator. `do` adds it (optionally making it active);
+ * `undo` removes it. The caller is responsible for constructing
+ * the Layer value — the Command just inserts and removes.
  */
 
-import type { Command } from '@core/command/Command';
-import type { DocumentService } from '@core/document/DocumentService';
+import { AddLayerCommand } from './AddLayerCommand';
+
 import type { Layer } from '@editor/map/schema/layer';
 
-export class AddTileLayerCommand implements Command {
-  readonly kind = 'layer:add';
-
-  constructor(
-    private readonly layer: Layer,
-    private readonly makeActive: boolean,
-  ) {}
-
-  do(service: DocumentService): void {
-    service.addLayer(this.layer, this.makeActive);
-  }
-
-  undo(service: DocumentService): void {
-    service.removeLayer(this.layer.id);
+export class AddTileLayerCommand extends AddLayerCommand {
+  constructor(layer: Layer, makeActive: boolean) {
+    super('layer:add', layer, makeActive);
   }
 }
