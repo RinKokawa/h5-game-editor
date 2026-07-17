@@ -441,6 +441,24 @@ const registerIpc = (): void => {
       }
     },
   );
+
+  // ----------------------- Window chrome -----------------------
+
+  // Update the OS title bar (the strip with the close / maximize /
+  // minimize buttons). The renderer calls this when the workspace
+  // changes so the title reads "H5 Game Editor - <workspaceName>"
+  // while editing and resets to "H5 Game Editor" when the
+  // Launcher takes over. The initial title comes from the
+  // BrowserWindow `title` option.
+  ipcMain.handle('window:setTitle', (_event, title: string) => {
+    if (!mainWindow) return { ok: false, error: 'No main window' };
+    try {
+      mainWindow.setTitle(title);
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: errMsg(err) };
+    }
+  });
 };
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);

@@ -43,6 +43,7 @@ const stubBridge = (impl: Partial<H5Bridge> = {}): H5Bridge => {
     ),
     loadRecents: vi.fn(() => Promise.resolve({ ok: true as const, entries: [] })),
     saveRecents: vi.fn(() => Promise.resolve({ ok: true as const })),
+    setWindowTitle: vi.fn(() => Promise.resolve({ ok: true as const })),
   };
   return { ...defaults, ...impl };
 };

@@ -85,6 +85,9 @@ export interface H5Bridge {
   readonly saveRecents: (
     entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+  // Window chrome (OS title bar) — see `window:setTitle` in main.ts.
+  readonly setWindowTitle: (title: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 const api: H5Bridge = {
@@ -117,6 +120,9 @@ const api: H5Bridge = {
     entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
   ): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('recents:save', entries),
+
+  setWindowTitle: (title: string): Promise<{ ok: true } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('window:setTitle', title),
 };
 
 contextBridge.exposeInMainWorld('h5', api);

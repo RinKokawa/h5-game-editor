@@ -70,6 +70,9 @@ export interface H5Bridge {
   readonly saveRecents: (
     entries: Array<{ path: string; name: string; lastOpenedAt: number }>,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+  /** Update the OS title bar (close / maximize / minimize strip). */
+  readonly setWindowTitle: (title: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 declare global {
@@ -174,4 +177,17 @@ export const saveRecents = async (
 ): Promise<{ ok: true } | { ok: false; error: string }> => {
   if (!window.h5) return { ok: true };
   return window.h5.saveRecents(entries);
+};
+
+// --- Window chrome ----------------------------------------------------
+
+// Browser fallback: returning `{ ok: true }` makes the title update a
+// fire-and-forget no-op outside Electron, which matches the recents /
+// pickFolder pattern. The OS title bar only matters when running as
+// a desktop app anyway.
+export const setWindowTitle = async (
+  title: string,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  if (!window.h5) return { ok: true };
+  return window.h5.setWindowTitle(title);
 };

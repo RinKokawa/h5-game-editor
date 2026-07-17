@@ -74,6 +74,7 @@ import { useWorkspaceStore } from '@state/workspaceStore';
 import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { documentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
+import { setWindowTitle } from '@systems/persistence/electronBridge';
 import { historyShortcuts } from '@systems/shortcut/HistoryShortcuts';
 import { ShortcutRegistry } from '@systems/shortcut/index';
 import { selectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
@@ -127,10 +128,23 @@ export function EditorShell() {
     log.info(ti18n('console.welcome'));
     log.info(ti18n('console.noDocument'));
 
+    // Sync the OS title bar (the strip with close / maximize /
+    // minimize). EditorShell only mounts in the editor phase, so on
+    // mount `current` is guaranteed set; on unmount (Back to
+    // Launcher) we reset to the bare app name. The initial
+    // `H5 Game Editor` title lives in the BrowserWindow `title`
+    // option, set by main.ts before the renderer loads — the
+    // launcher phase never triggers this effect.
+    const current = useWorkspaceStore.getState().current;
+    if (current) {
+      void setWindowTitle(`H5 Game Editor - ${current.name}`);
+    }
+
     return () => {
       shortcutRegistry.detach();
       unsubLog();
       uninstallHistorySubscriber();
+      void setWindowTitle('H5 Game Editor');
     };
   }, []);
 
