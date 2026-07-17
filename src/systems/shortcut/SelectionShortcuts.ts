@@ -7,8 +7,10 @@
  *                          - collider selection: RemoveColliderCommand
  *   Escape             → clear the current selection (any kind)
  *
- * Listens on `window`, ignores key events from form controls so
- * typing in inputs doesn't accidentally erase the user's work.
+ * Step 25 lifts these into declarative {@link Shortcut} values.
+ * The run() callbacks call `event.preventDefault()` after the
+ * registry dispatches, so the handler must receive the original
+ * event.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
@@ -19,63 +21,54 @@ import {
 } from '@editor/map/commands/index';
 import { useSelectionStore } from '@state/selectionStore';
 
-const isEditableTarget = (target: EventTarget | null): boolean => {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+import type { Shortcut } from './Shortcut';
+
+const handleDelete = (event: KeyboardEvent): void => {
+  const sel = useSelectionStore.getState().selection;
+  if (!sel) return;
+  event.preventDefault();
+
+  switch (sel.kind) {
+    case 'entity':
+      commandBus.execute(new RemoveEntityCommand(sel.entityId));
+      useSelectionStore.getState().clear();
+      return;
+    case 'collider':
+      commandBus.execute(new RemoveColliderCommand(sel.colliderId));
+      useSelectionStore.getState().clear();
+      return;
+    case 'tiles':
+      commandBus.execute(new EraseSelectionCommand());
+      return;
+    default: {
+      const _exhaustive: never = sel;
+      return void _exhaustive;
+    }
+  }
 };
 
-export class SelectionShortcuts {
-  private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (isEditableTarget(event.target)) return;
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
+const handleEscape = (event: KeyboardEvent): void => {
+  const sel = useSelectionStore.getState().selection;
+  const marquee = useSelectionStore.getState().marquee;
+  if (sel === null && marquee === null) return;
+  event.preventDefault();
+  useSelectionStore.getState().clear();
+};
 
-    if (event.key === 'Delete' || event.key === 'Backspace') {
-      this.handleDelete(event);
-      return;
-    }
-    if (event.key === 'Escape') {
-      const sel = useSelectionStore.getState().selection;
-      const marquee = useSelectionStore.getState().marquee;
-      if (sel === null && marquee === null) return;
-      event.preventDefault();
-      useSelectionStore.getState().clear();
-    }
-  };
-
-  private handleDelete(event: KeyboardEvent): void {
-    const sel = useSelectionStore.getState().selection;
-    if (!sel) return;
-    event.preventDefault();
-
-    switch (sel.kind) {
-      case 'entity':
-        commandBus.execute(new RemoveEntityCommand(sel.entityId));
-        useSelectionStore.getState().clear();
-        return;
-      case 'collider':
-        commandBus.execute(new RemoveColliderCommand(sel.colliderId));
-        useSelectionStore.getState().clear();
-        return;
-      case 'tiles': {
-        const cmd = new EraseSelectionCommand();
-        commandBus.execute(cmd);
-        return;
-      }
-      default: {
-        // exhaustive
-        const _exhaustive: never = sel;
-        return void _exhaustive;
-      }
-    }
-  }
-
-  attach(): void {
-    window.addEventListener('keydown', this.onKeyDown);
-  }
-
-  detach(): void {
-    window.removeEventListener('keydown', this.onKeyDown);
-  }
-}
+export const selectionShortcuts: readonly Shortcut[] = [
+  {
+    id: 'selection.delete',
+    binding: { kind: 'key', key: 'Delete' },
+    run: handleDelete,
+  },
+  {
+    id: 'selection.backspace',
+    binding: { kind: 'key', key: 'Backspace' },
+    run: handleDelete,
+  },
+  {
+    id: 'selection.escape',
+    binding: { kind: 'key', key: 'Escape' },
+    run: handleEscape,
+  },
+];

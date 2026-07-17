@@ -5,47 +5,37 @@
  * the current document and clears the undo/redo stack (loading is
  * not itself undoable).
  *
- * Saves / loads are reported via console (and could be wired to a
- * toast / status-bar readout later).
+ * Step 25 lifts these into declarative {@link Shortcut} values so
+ * they share the registry with the history / selection / tool
+ * shortcuts. Outcomes are still reported via the console (a future
+ * step can wire them to the StatusBar).
  */
 
 import { loadDocument, saveDocument } from './documentIO';
 
-const isEditableTarget = (target: EventTarget | null): boolean => {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-};
+import type { Shortcut } from '@systems/shortcut/Shortcut';
 
-export class DocumentIOShortcuts {
-  private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (isEditableTarget(event.target)) return;
-    if (!event.ctrlKey && !event.metaKey) return;
-
-    const key = event.key.toLowerCase();
-    if (key === 's') {
+export const documentIOShortcuts: readonly Shortcut[] = [
+  {
+    id: 'documentio.save',
+    binding: { kind: 'ctrlKey', key: 's' },
+    run: (event: KeyboardEvent) => {
       event.preventDefault();
       void saveDocument().then((outcome) => {
         if (outcome.ok) console.info(`[DocumentIO] saved (${outcome.bytes} bytes)`);
         else console.error('[DocumentIO] save failed:', outcome.error);
       });
-      return;
-    }
-    if (key === 'o') {
+    },
+  },
+  {
+    id: 'documentio.load',
+    binding: { kind: 'ctrlKey', key: 'o' },
+    run: (event: KeyboardEvent) => {
       event.preventDefault();
       void loadDocument().then((outcome) => {
         if (outcome.ok) console.info(`[DocumentIO] loaded (${outcome.layerCount} layers)`);
         else console.warn('[DocumentIO] load failed:', outcome.error);
       });
-    }
-  };
-
-  attach(): void {
-    window.addEventListener('keydown', this.onKeyDown);
-  }
-
-  detach(): void {
-    window.removeEventListener('keydown', this.onKeyDown);
-  }
-}
+    },
+  },
+];
