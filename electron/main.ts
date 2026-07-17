@@ -15,10 +15,17 @@
  *   - packaged build           → loads dist/index.html via file://
  *
  * Security stance:
- *   - contextIsolation: true (default)
- *   - nodeIntegration: false (default)
- *   - sandbox: true (default; preload uses `electron` via the
- *     contextBridge, which is the only Node bridge the renderer sees)
+ *   - contextIsolation: true (default; enforce)
+ *   - nodeIntegration: false (default; enforce)
+ *   - sandbox: false — the editor loads its own assets (Vite dev
+ *     server in dev, bundled dist/index.html in prod) and never
+ *     fetches remote content, so the sandbox's primary threat
+ *     model (untrusted remote scripts) doesn't apply. ESM preloads
+ *     with named imports from the virtual `electron` module
+ *     (`import { contextBridge, ipcRenderer } from 'electron'`)
+ *     silently fail under sandbox: true in Electron 43; disabling
+ *     sandbox keeps the same renderer surface and lets the preload
+ *     actually expose `window.h5`.
  *   - All file I/O is funneled through these handlers; the renderer
  *     cannot read or write arbitrary paths directly.
  */
@@ -74,7 +81,7 @@ const createWindow = (): BrowserWindow => {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
