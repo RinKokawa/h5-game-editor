@@ -242,15 +242,36 @@ const registerIpc = (): void => {
 
         // v0.1 creates one empty document upfront so the editor has
         // something to load. The document body is the same wire format
-        // `serializeDocument()` produces for an empty map.
+        // `serializeDocument()` produces — `meta` is nested, the seed
+        // tile layer matches `seedLayer('layer.tile.1', 'Layer 1')` in
+        // `src/state/documentStore.ts`, and entities / colliders
+        // round-trip as empty arrays. Without a seed layer the
+        // renderer's deserializer throws "document has no layers";
+        // without `meta` it throws "meta missing". Mirror the
+        // renderer's defaults (`DEFAULT_DOCUMENT_META` = 1920×1088 px,
+        // tileSize 32) so a freshly created workspace opens with the
+        // same state a new editor session would have.
         const docId = `doc.${Date.now().toString(36)}.${randomSuffix()}`;
         const emptyDoc = {
           version: 1,
-          kind: 'document',
-          tileSize: 32,
-          mapSize: { width: 20, height: 15 },
-          layers: [],
-          activeLayerId: '',
+          meta: {
+            tileSize: 32,
+            mapSize: { width: 1920, height: 1088 },
+          },
+          layers: [
+            {
+              id: 'layer.tile.1',
+              type: 'tile',
+              name: 'Layer 1',
+              visible: true,
+              locked: false,
+              opacity: 1,
+              properties: { entries: [] },
+              data: { tiles: [] },
+            },
+          ],
+          entities: [],
+          colliders: [],
         };
         await writeFile(
           path.join(folderPath, DOCUMENTS_DIRNAME, `${docId}.json`),
