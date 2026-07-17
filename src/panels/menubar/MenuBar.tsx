@@ -20,6 +20,7 @@
  */
 
 import { AVAILABLE_LOCALES, NATIVE_NAMES, setLocale, useLocale, useT } from '@core/i18n';
+import { useWorkspaceStore } from '@state/workspaceStore';
 
 import styles from './MenuBar.module.css';
 
@@ -51,6 +52,11 @@ interface MenuDef {
 export function MenuBar({ fileActions }: MenuBarProps) {
   const t = useT();
   const currentLocale = useLocale();
+  // EditorShell only mounts MenuBar in the editor phase, where
+  // `current` is guaranteed non-null — the `t('project.untitled')`
+  // fallback is purely defensive (e.g. a future state where MenuBar
+  // mounts during a transition).
+  const projectName = useWorkspaceStore((s) => s.current?.name) ?? t('project.untitled');
 
   const fileItems: ReadonlyArray<MenuItem> = fileActions.map((a) => ({
     labelKey: a.labelKey,
@@ -137,7 +143,7 @@ export function MenuBar({ fileActions }: MenuBarProps) {
         })}
       </div>
       <div className={styles.center} aria-hidden="true">
-        {t('project.untitled')}
+        {projectName}
       </div>
       <div className={styles.right} aria-hidden="true">
         v0.1.0
