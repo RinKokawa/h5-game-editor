@@ -16,12 +16,22 @@
   flex: 0 0 auto;
 }
 
-.center {
-  flex: 1;
-  text-align: center;
+/* Project name sits at the right end of the left slot, after the
+   menus. A thin left divider visually separates it from the menu
+   items, matching native menu-bar conventions (e.g. macOS shows
+   the app name in bold at this position). */
+.projectName {
+  flex: 0 0 auto;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--color-border);
   font-size: 11px;
   color: var(--color-text-muted);
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
 }
 
 .right {

@@ -142,7 +142,7 @@ export function MenuBar({ fileActions }: MenuBarProps) {
           );
         })}
       </div>
-      <div className={styles.center} aria-hidden="true">
+      <div className={styles.projectName} aria-hidden="true">
         {projectName}
       </div>
       <div className={styles.right} aria-hidden="true">
