@@ -14,11 +14,14 @@
  *
  * v0.1 doesn't support collider removal from the canvas (no
  * selection model yet). Use Undo (Ctrl+Z) to revert.
+ *
+ * Step 24: implements {@link Tool}.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
 import { t as ti18n } from '@core/i18n';
 import { placeCollider } from '@editor/map/commands/index';
+import { MIN_BOX_SIZE } from '@shared/constants/index';
 import { screenToWorld } from '@shared/math/index';
 import { useDocumentStore } from '@state/documentStore';
 import { useToolStore } from '@state/toolStore';
@@ -27,11 +30,14 @@ import { log } from '@systems/diagnostics';
 
 import type { BoxCollider } from '@editor/map/schema/collider';
 import type { LayerId } from '@editor/map/schema/ids';
+import type { Tool } from '@shared/tool/Tool';
 
-const MIN_BOX_SIZE = 4;
+export class ColliderTool implements Tool {
+  readonly id = 'collider';
+  readonly labelKey = 'toolbar.tool.collider';
 
-export class ColliderTool {
-  private readonly canvas: HTMLCanvasElement;
+  private canvas: HTMLCanvasElement | null = null;
+
   private spacePressed = false;
 
   private startWorld: { x: number; y: number } | null = null;
@@ -39,7 +45,7 @@ export class ColliderTool {
   /** Monotonically increasing suffix so auto-names don't collide. */
   private placementCounter = 0;
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -49,13 +55,17 @@ export class ColliderTool {
     window.addEventListener('keyup', this.onKeyUp);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+      canvas.removeEventListener('pointermove', this.onPointerMove);
+      canvas.removeEventListener('pointerup', this.onPointerUp);
+      canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas = null;
     this.startWorld = null;
     this.lastWorld = null;
   }
@@ -64,6 +74,7 @@ export class ColliderTool {
     if (!this.isActive()) return;
     if (event.button !== 0) return;
     if (this.spacePressed) return;
+    if (!this.canvas) return;
     const layer = this.activeCollisionLayer();
     if (!layer) return;
     const world = this.eventToWorld(event);
@@ -85,7 +96,7 @@ export class ColliderTool {
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (this.startWorld === null) return;
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
+    if (this.canvas?.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
     const layer = this.activeCollisionLayer();
@@ -130,17 +141,19 @@ export class ColliderTool {
   }
 
   private eventToWorld(event: PointerEvent): { x: number; y: number } | null {
-    const rect = this.canvas.getBoundingClientRect();
+    const canvas = this.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
     if (world.x < 0 || world.y < 0) return null;
-    if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return null;
+    if (world.x >= doc.meta.mapSize.width || world.y >= doc.meta.mapSize.height) return null;
     return world;
   }
 
   private tileSizeOrDefault(): number {
-    const tileSize = useDocumentStore.getState().tileSize;
+    const tileSize = useDocumentStore.getState().meta.tileSize;
     return tileSize > 0 ? tileSize : 32;
   }
 

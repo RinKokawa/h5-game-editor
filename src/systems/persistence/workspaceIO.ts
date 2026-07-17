@@ -25,7 +25,6 @@
  * launcher / menu can render a useful message without try/catch.
  */
 
-import { commandBus } from '@core/command';
 import {
   deserializeDocument,
   serializeDocument,
@@ -34,7 +33,6 @@ import {
 } from '@core/serialization/index';
 import { asLayerId } from '@editor/map/schema/ids';
 import { useDocumentStore } from '@state/documentStore';
-import { useSelectionStore } from '@state/selectionStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 
 import {
@@ -133,14 +131,17 @@ export const loadActiveDocument = async (
     }
 
     const loaded: LoadedDocument = deserializeDocument(parsed);
+    // Wipe selection + history first so they don't bleed across
+    // workspaces. The Document store fields below overwrite the
+    // reset() defaults wholesale, so we don't call documentStore.reset().
+    useWorkspaceStore.getState().resetEditorState();
     useDocumentStore.setState({
-      tileSize: loaded.tileSize,
-      mapSize: loaded.mapSize,
+      meta: loaded.meta,
       layers: loaded.layers,
+      entities: loaded.entities,
+      colliders: loaded.colliders,
       activeLayerId: asLayerId(loaded.activeLayerId),
     });
-    useSelectionStore.getState().clear();
-    commandBus.clearHistory();
     useWorkspaceStore.setState({ activeDocId: docId });
 
     return { ok: true, layerCount: loaded.layers.length };
@@ -157,8 +158,9 @@ export const loadActiveDocument = async (
 export const serializeActiveDocument = (): SerializedDocumentV1 => {
   const state = useDocumentStore.getState();
   return serializeDocument({
-    tileSize: state.tileSize,
-    mapSize: state.mapSize,
+    meta: state.meta,
     layers: state.layers,
+    entities: state.entities,
+    colliders: state.colliders,
   });
 };

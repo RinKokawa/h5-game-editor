@@ -22,6 +22,8 @@
  * for Camera panning. The tool tracks Space independently so the
  * shortcut can detect a drag intent without coordinating with the
  * Camera instance.
+ *
+ * Step 24: implements {@link Tool}.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
@@ -39,9 +41,13 @@ import { useViewStore } from '@state/viewStore';
 import type { Command } from '@core/command/Command';
 import type { TileCoord } from '@editor/map/schema/geometry';
 import type { LayerId } from '@editor/map/schema/ids';
+import type { Tool } from '@shared/tool/Tool';
 
-export class RectTool {
-  private readonly canvas: HTMLCanvasElement;
+export class RectTool implements Tool {
+  readonly id = 'rect';
+  readonly labelKey = 'toolbar.tool.rect';
+
+  private canvas: HTMLCanvasElement | null = null;
 
   private spacePressed = false;
   private painting = false;
@@ -52,7 +58,7 @@ export class RectTool {
   // a Command buffer so a single Ctrl+Z walks the buffer in reverse.
   private strokeBuffer: Command[] = [];
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -62,13 +68,17 @@ export class RectTool {
     window.addEventListener('keyup', this.onKeyUp);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+      canvas.removeEventListener('pointermove', this.onPointerMove);
+      canvas.removeEventListener('pointerup', this.onPointerUp);
+      canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas = null;
     this.painting = false;
     this.anchor = null;
     this.current = null;
@@ -81,6 +91,7 @@ export class RectTool {
     if (this.spacePressed) return;
     const coord = this.coordAt(event);
     if (!coord) return;
+    if (!this.canvas) return;
     event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.painting = true;
@@ -110,7 +121,7 @@ export class RectTool {
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (!this.painting) return;
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
+    if (this.canvas?.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
     this.flushStroke();
@@ -266,15 +277,17 @@ export class RectTool {
   }
 
   private coordAt(event: PointerEvent): TileCoord | null {
-    const rect = this.canvas.getBoundingClientRect();
+    const canvas = this.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
     if (world.x < 0 || world.y < 0) return null;
-    if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return null;
+    if (world.x >= doc.meta.mapSize.width || world.y >= doc.meta.mapSize.height) return null;
     return {
-      x: Math.floor(world.x / doc.tileSize),
-      y: Math.floor(world.y / doc.tileSize),
+      x: Math.floor(world.x / doc.meta.tileSize),
+      y: Math.floor(world.y / doc.meta.tileSize),
     };
   }
 }

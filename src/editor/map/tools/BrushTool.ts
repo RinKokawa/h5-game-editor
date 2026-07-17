@@ -18,6 +18,9 @@
  * button, or Space+left). BrushTool independently tracks Space so
  * it knows not to paint under Space; both tools can coexist on the
  * same canvas listeners without coordination.
+ *
+ * Step 24: implements {@link Tool}. Construction is parameterless;
+ * the canvas reference is supplied via `attach(canvas)`.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
@@ -34,16 +37,20 @@ import { useViewStore } from '@state/viewStore';
 
 import type { Command } from '@core/command/Command';
 import type { TileCoord } from '@editor/map/schema/geometry';
+import type { Tool } from '@shared/tool/Tool';
 
-export class BrushTool {
-  private readonly canvas: HTMLCanvasElement;
+export class BrushTool implements Tool {
+  readonly id = 'brush';
+  readonly labelKey = 'toolbar.tool.brush';
+
+  private canvas: HTMLCanvasElement | null = null;
 
   private spacePressed = false;
   private painting = false;
   private lastPaintedCoord: TileCoord | null = null;
   private strokeBuffer: Command[] = [];
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -53,13 +60,17 @@ export class BrushTool {
     window.addEventListener('keyup', this.onKeyUp);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+      canvas.removeEventListener('pointermove', this.onPointerMove);
+      canvas.removeEventListener('pointerup', this.onPointerUp);
+      canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas = null;
     this.painting = false;
     this.lastPaintedCoord = null;
     this.strokeBuffer = [];
@@ -69,6 +80,7 @@ export class BrushTool {
     if (!this.isActive()) return;
     if (event.button !== 0) return;
     if (this.spacePressed) return;
+    if (!this.canvas) return;
     event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.painting = true;
@@ -87,7 +99,7 @@ export class BrushTool {
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (!this.painting) return;
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
+    if (this.canvas?.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
     this.flushStroke();
@@ -130,17 +142,19 @@ export class BrushTool {
   }
 
   private paintAt(event: PointerEvent): void {
-    const rect = this.canvas.getBoundingClientRect();
+    const canvas = this.canvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
 
     if (world.x < 0 || world.y < 0) return;
-    if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return;
+    if (world.x >= doc.meta.mapSize.width || world.y >= doc.meta.mapSize.height) return;
 
     const coord: TileCoord = {
-      x: Math.floor(world.x / doc.tileSize),
-      y: Math.floor(world.y / doc.tileSize),
+      x: Math.floor(world.x / doc.meta.tileSize),
+      y: Math.floor(world.y / doc.meta.tileSize),
     };
     if (
       this.lastPaintedCoord &&

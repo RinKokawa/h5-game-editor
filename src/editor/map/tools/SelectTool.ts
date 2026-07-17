@@ -21,6 +21,8 @@
  * Selection always targets the ACTIVE layer — entities/colliders on
  * non-active layers are unreachable here. Cross-layer selection
  * extension lands with the selection model (out of scope for v0.1).
+ *
+ * Step 24: implements {@link Tool}.
  */
 
 import { screenToWorld } from '@shared/math/index';
@@ -34,9 +36,13 @@ import type { Entity } from '@editor/map/schema/entity';
 import type { TileCoord } from '@editor/map/schema/geometry';
 import type { ColliderId, EntityId } from '@editor/map/schema/ids';
 import type { CollisionLayer, Layer, ObjectLayer, TileLayer } from '@editor/map/schema/layer';
+import type { Tool } from '@shared/tool/Tool';
 
-export class SelectTool {
-  private readonly canvas: HTMLCanvasElement;
+export class SelectTool implements Tool {
+  readonly id = 'select';
+  readonly labelKey = 'toolbar.tool.select';
+
+  private canvas: HTMLCanvasElement | null = null;
 
   private spacePressed = false;
   private dragging = false;
@@ -44,7 +50,7 @@ export class SelectTool {
   /** Pointer-down world point, used for object/collision hit-tests. */
   private pointerDownWorld: { x: number; y: number } | null = null;
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -54,13 +60,17 @@ export class SelectTool {
     window.addEventListener('keyup', this.onKeyUp);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+      canvas.removeEventListener('pointermove', this.onPointerMove);
+      canvas.removeEventListener('pointerup', this.onPointerUp);
+      canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas = null;
     this.dragging = false;
     this.lastPointerEvent = null;
     this.pointerDownWorld = null;
@@ -70,6 +80,7 @@ export class SelectTool {
     if (!this.isActive()) return;
     if (event.button !== 0) return;
     if (this.spacePressed) return;
+    if (!this.canvas) return;
     const world = this.eventToWorld(event);
     if (!world) return;
     const layer = this.activeLayer();
@@ -81,7 +92,7 @@ export class SelectTool {
     this.pointerDownWorld = world;
 
     if (layer.type === 'tile') {
-      const coord = worldToTile(world, useDocumentStore.getState().tileSize);
+      const coord = worldToTile(world, useDocumentStore.getState().meta.tileSize);
       useSelectionStore.getState().beginMarquee(layer.id, coord);
     }
   };
@@ -97,14 +108,14 @@ export class SelectTool {
       if (layer?.type === 'tile') {
         useSelectionStore
           .getState()
-          .updateMarquee(worldToTile(world, useDocumentStore.getState().tileSize));
+          .updateMarquee(worldToTile(world, useDocumentStore.getState().meta.tileSize));
       }
     }
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (!this.isActive() || !this.dragging) return;
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
+    if (this.canvas?.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
     const down = this.pointerDownWorld;
@@ -125,7 +136,7 @@ export class SelectTool {
       }
       // Click without drag → toggle the cell under the cursor.
       const doc = useDocumentStore.getState();
-      const tileSize = doc.tileSize;
+      const tileSize = doc.meta.tileSize;
       const coord = worldToTile(down, tileSize);
       useSelectionStore.getState().toggleTileCell(layer.id, coord);
       return;
@@ -170,12 +181,14 @@ export class SelectTool {
   }
 
   private eventToWorld(event: PointerEvent): { x: number; y: number } | null {
-    const rect = this.canvas.getBoundingClientRect();
+    const canvas = this.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
     if (world.x < 0 || world.y < 0) return null;
-    if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return null;
+    if (world.x >= doc.meta.mapSize.width || world.y >= doc.meta.mapSize.height) return null;
     return world;
   }
 

@@ -12,7 +12,7 @@
  *     (Tile-only in v0.1 — SelectTool gates on layer type.)
  *   - Hover cell: a single-cell outline at the cursor's tile coord,
  *     independent of the active tool. Driven from
- *     `viewStore.cursorWorld + documentStore.tileSize` so it works
+ *     `viewStore.cursorWorld + documentStore.meta.tileSize` so it works
  *     for Brush/Eraser/Entity/Collider as well as Select.
  *
  * Subscribes to selectionStore (selection + marquee), documentStore
@@ -162,7 +162,7 @@ export class SelectionOverlay {
     // the map bounds so the cell doesn't draw outside the playable
     // area when the cursor is in the canvas gutter.
     if (cursorWorld && tileSize > 0) {
-      const { width, height } = doc.mapSize;
+      const { width, height } = doc.meta.mapSize;
       if (
         cursorWorld.x >= 0 &&
         cursorWorld.y >= 0 &&

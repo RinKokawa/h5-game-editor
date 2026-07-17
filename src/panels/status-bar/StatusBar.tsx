@@ -36,8 +36,8 @@ export function StatusBar() {
   const zoom = useViewStore((s) => s.zoom);
   const cursorScreen = useViewStore((s) => s.cursorScreen);
   const cursorWorld = useViewStore((s) => s.cursorWorld);
-  const tileSize = useDocumentStore((s) => s.tileSize);
-  const mapSize = useDocumentStore((s) => s.mapSize);
+  const tileSize = useDocumentStore((s) => s.meta.tileSize);
+  const mapSize = useDocumentStore((s) => s.meta.mapSize);
   const activeToolId = useToolStore((s) => s.activeToolId);
 
   const screen = cursorScreen ? `${fmt(cursorScreen.x)}, ${fmt(cursorScreen.y)}` : '—, —';

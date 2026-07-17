@@ -94,7 +94,9 @@ export class GridView {
     }
     this.container.visible = true;
 
-    const { tileSize, mapSize } = doc;
+    const {
+      meta: { tileSize, mapSize },
+    } = doc;
     if (
       tileSize <= 0 ||
       mapSize.width <= 0 ||

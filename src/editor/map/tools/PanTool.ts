@@ -9,19 +9,26 @@
  * by the delta in screen pixels. `screenToWorld` / `worldToScreen`
  * are not needed — panning is a pure camera translation in screen
  * space.
+ *
+ * Step 24: implements {@link Tool}.
  */
 
 import { useToolStore } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
 
-export class PanTool {
-  private readonly canvas: HTMLCanvasElement;
+import type { Tool } from '@shared/tool/Tool';
+
+export class PanTool implements Tool {
+  readonly id = 'pan';
+  readonly labelKey = 'toolbar.tool.pan';
+
+  private canvas: HTMLCanvasElement | null = null;
 
   private dragging = false;
   private lastX = 0;
   private lastY = 0;
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
@@ -29,17 +36,22 @@ export class PanTool {
     canvas.addEventListener('pointerleave', this.onPointerLeave);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+      canvas.removeEventListener('pointermove', this.onPointerMove);
+      canvas.removeEventListener('pointerup', this.onPointerUp);
+      canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    }
+    this.canvas = null;
     this.dragging = false;
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
     if (!this.isActive()) return;
     if (event.button !== 0 && event.button !== 1) return;
+    if (!this.canvas) return;
     event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.dragging = true;
@@ -58,7 +70,7 @@ export class PanTool {
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (!this.dragging) return;
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
+    if (this.canvas?.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId);
     }
     this.dragging = false;

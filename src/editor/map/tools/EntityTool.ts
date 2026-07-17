@@ -19,6 +19,8 @@
  * hit-test yet). Removal lands with Step 19 (PropertiesPanel real
  * data) which adds the entity selection model. Use Undo (Ctrl+Z)
  * to revert a misplaced entity.
+ *
+ * Step 24: implements {@link Tool}.
  */
 
 import { commandBus } from '@core/command/commandBusSingleton';
@@ -34,25 +36,34 @@ import { log } from '@systems/diagnostics';
 
 import type { Entity } from '@editor/map/schema/entity';
 import type { LayerId } from '@editor/map/schema/ids';
+import type { Tool } from '@shared/tool/Tool';
 
-export class EntityTool {
-  private readonly canvas: HTMLCanvasElement;
+export class EntityTool implements Tool {
+  readonly id = 'entity';
+  readonly labelKey = 'toolbar.tool.entity';
+
+  private canvas: HTMLCanvasElement | null = null;
+
   private spacePressed = false;
 
   /** Monotonically increasing suffix so auto-names don't collide. */
   private placementCounter = 0;
 
-  constructor(canvas: HTMLCanvasElement) {
+  attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
   }
 
-  destroy(): void {
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+  detach(): void {
+    const canvas = this.canvas;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.onPointerDown);
+    }
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.canvas = null;
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
@@ -94,12 +105,14 @@ export class EntityTool {
   }
 
   private eventToWorld(event: PointerEvent): { x: number; y: number } | null {
-    const rect = this.canvas.getBoundingClientRect();
+    const canvas = this.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     const world = screenToWorld(screen, useViewStore.getState());
     const doc = useDocumentStore.getState();
     if (world.x < 0 || world.y < 0) return null;
-    if (world.x >= doc.mapSize.width || world.y >= doc.mapSize.height) return null;
+    if (world.x >= doc.meta.mapSize.width || world.y >= doc.meta.mapSize.height) return null;
     return world;
   }
 

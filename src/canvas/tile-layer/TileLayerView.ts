@@ -1,135 +1,81 @@
 /**
- * TileLayerView — renders all visible TileLayers in document order.
+ * TileLayerView — renders all visible TileLayers in document order,
+ * incrementally.
  *
- * Owns one Pixi `Container` attached to the world container, with one
- * sub-container per TileLayer (added in `layers[0]`-first order so the
- * array head ends up on top, per the Tiled-style convention). Hidden
- * layers' sub-containers are kept but `visible = false`.
+ * Step 23 replaces the "rebuild everything on change" model with a
+ * sprite map (`Map<TileCoordKey, Sprite>` per layer). Sprites
+ * added/removed/changed are mutated in place via
+ * {@link diffTileSprites}; unchanged cells are skipped entirely.
  *
- * On every Document change the view diffs layer membership, reorders
- * children to match the new array order, rebuilds sprites inside any
- * changed layer, and updates visibility flags. ObjectLayer and
- * CollisionLayer entries are skipped — they get their own views in
- * later steps.
+ * The base class still owns container lifecycle, rAF debouncing,
+ * and drop/add/reorder (see {@link LayerView}). This subclass owns
+ * per-layer sprite pools and the no-op skipping logic that decides
+ * between "skip" and "diff".
  */
 
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Sprite, Texture } from 'pixi.js';
 
+import { LayerView } from '@canvas/layers/LayerView';
 import { colorForTileId } from '@editor/map/palette/defaultPalette';
 import { decodeTileCoord } from '@editor/map/schema/tile';
 import { useDocumentStore } from '@state/documentStore';
 
+
+import type { LayerNode } from '@canvas/layers/LayerView';
 import type { LayerId, TileCoordKey } from '@editor/map/schema/ids';
-import type { Layer, TileLayer } from '@editor/map/schema/layer';
+import type { TileLayer } from '@editor/map/schema/layer';
 import type { PlacedTile } from '@editor/map/schema/tile';
+import type { Container} from 'pixi.js';
 
-const isTileLayer = (l: Layer): l is TileLayer => l.type === 'tile';
-
-interface LayerNode {
-  readonly container: Container;
-  /** Snapshot of placed-tile ids, used to skip no-op redraws. */
-  lastTiles: ReadonlyMap<TileCoordKey, PlacedTile>;
-  lastVisible: boolean;
+interface LayerSnapshot {
+  readonly tiles: ReadonlyMap<TileCoordKey, PlacedTile>;
+  readonly tileSize: number;
 }
 
-export class TileLayerView {
-  readonly container: Container;
+export class TileLayerView extends LayerView<TileLayer> {
+  private readonly snapshots = new Map<LayerId, LayerSnapshot>();
+  private readonly sprites = new Map<LayerId, Map<TileCoordKey, Sprite>>();
 
-  private readonly layerNodes: Map<LayerId, LayerNode> = new Map();
-  private unsubscribes: Array<() => void> = [];
-  private rafId: number | null = null;
-  private destroyed = false;
-
-  constructor(parent: Container) {
-    this.container = new Container();
-    this.container.eventMode = 'none';
-
-    parent.addChild(this.container);
-
-    this.subscribeToStore();
-    this.scheduleRender();
+  protected override subscribeToSource(): () => void {
+    return useDocumentStore.subscribe(() => this.scheduleRender());
   }
 
-  destroy(): void {
-    if (this.destroyed) return;
-    this.destroyed = true;
-    for (const unsub of this.unsubscribes) unsub();
-    this.unsubscribes = [];
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-    for (const node of this.layerNodes.values()) {
-      node.container.destroy({ children: true });
-    }
-    this.layerNodes.clear();
-    if (this.container.parent) {
-      this.container.parent.removeChild(this.container);
-    }
-    this.container.destroy({ children: true });
-  }
+  protected override filterLayer = (l: { type: string }): l is TileLayer => l.type === 'tile';
 
-  private subscribeToStore(): void {
-    this.unsubscribes.push(useDocumentStore.subscribe(() => this.scheduleRender()));
-  }
+  protected override renderNode(node: LayerNode, layer: TileLayer): void {
+    const ts = tileSize();
+    const prev = this.snapshots.get(layer.id);
+    const next = layer.data.tiles;
 
-  private scheduleRender(): void {
-    if (this.destroyed || this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      this.render();
+    if (prev && prev.tileSize === ts && tilesEqual(prev.tiles, next)) {
+      return; // no-op
+    }
+
+    let spritesForLayer = this.sprites.get(layer.id);
+    if (!spritesForLayer) {
+      spritesForLayer = new Map();
+      this.sprites.set(layer.id, spritesForLayer);
+    }
+
+    diffTileSprites({
+      container: node.container,
+      sprites: spritesForLayer,
+      prev: prev?.tiles,
+      next,
+      tileSize: ts,
     });
+
+    this.snapshots.set(layer.id, { tiles: next, tileSize: ts });
   }
 
-  private render(): void {
-    if (this.destroyed) return;
-
-    const { layers, tileSize } = useDocumentStore.getState();
-    const visibleTileLayers = layers.filter(isTileLayer);
-
-    // 1. Drop sub-containers for layers that no longer exist.
-    const incomingIds = new Set(visibleTileLayers.map((l) => l.id));
-    for (const [id, node] of this.layerNodes) {
-      if (!incomingIds.has(id)) {
-        node.container.destroy({ children: true });
-        this.layerNodes.delete(id);
-      }
-    }
-
-    // 2. Add new layers, update existing ones.
-    for (const layer of visibleTileLayers) {
-      let node = this.layerNodes.get(layer.id);
-      if (!node) {
-        const c = new Container();
-        c.eventMode = 'none';
-        this.container.addChild(c);
-        node = { container: c, lastTiles: new Map(), lastVisible: true };
-        this.layerNodes.set(layer.id, node);
-      }
-      if (node.lastVisible !== layer.visible) {
-        node.container.visible = layer.visible;
-        node.lastVisible = layer.visible;
-      }
-      if (!tilesEqual(node.lastTiles, layer.data.tiles)) {
-        rebuildTiles(node.container, layer.data.tiles, tileSize);
-        node.lastTiles = layer.data.tiles;
-      }
-    }
-
-    // 3. Re-order sub-containers to match layer array order so layers[0]
-    // ends up on top of the visual stack.
-    for (let i = 0; i < visibleTileLayers.length; i++) {
-      const layer = visibleTileLayers[i];
-      if (!layer) continue;
-      const node = this.layerNodes.get(layer.id);
-      if (!node) continue;
-      if (this.container.getChildIndex(node.container) !== i) {
-        // Pixi v8: addChildAt reparents in place.
-        this.container.addChildAt(node.container, i);
-      }
-    }
+  override destroy(): void {
+    super.destroy();
+    this.snapshots.clear();
+    this.sprites.clear();
   }
 }
+
+const tileSize = (): number => useDocumentStore.getState().meta.tileSize;
 
 const tilesEqual = (
   a: ReadonlyMap<TileCoordKey, PlacedTile>,
@@ -144,27 +90,71 @@ const tilesEqual = (
   return true;
 };
 
-const rebuildTiles = (
-  container: Container,
-  tiles: ReadonlyMap<TileCoordKey, PlacedTile>,
-  tileSize: number,
-): void => {
-  for (const child of container.children) {
-    child.destroy();
+/**
+ * Apply a tile-layer diff: drop removed sprites, create new sprites,
+ * and mutate changed sprites in place. Exported for tests.
+ */
+export const diffTileSprites = (params: {
+  readonly container: Container;
+  readonly sprites: Map<TileCoordKey, Sprite>;
+  readonly prev: ReadonlyMap<TileCoordKey, PlacedTile> | undefined;
+  readonly next: ReadonlyMap<TileCoordKey, PlacedTile>;
+  readonly tileSize: number;
+}): void => {
+  const { container, sprites, prev, next, tileSize } = params;
+
+  // 1. Remove tiles that no longer exist.
+  if (prev) {
+    for (const key of prev.keys()) {
+      if (!next.has(key)) {
+        const sprite = sprites.get(key);
+        if (sprite) {
+          sprite.destroy();
+          sprites.delete(key);
+        }
+      }
+    }
   }
-  container.removeChildren();
-  for (const [key, placed] of tiles) {
-    container.addChild(makeTileSprite(key, placed, tileSize));
+
+  // 2. Add new + mutate changed.
+  for (const [key, placed] of next) {
+    const existing = sprites.get(key);
+    if (!existing) {
+      const fresh = makeTileSprite(key, placed, tileSize);
+      sprites.set(key, fresh);
+      container.addChild(fresh);
+      continue;
+    }
+    mutateTileSprite(existing, key, placed, tileSize);
   }
 };
 
 const makeTileSprite = (key: TileCoordKey, placed: PlacedTile, tileSize: number): Sprite => {
   const coord = decodeTileCoord(key);
   const sprite = new Sprite(Texture.WHITE);
+  applyPlacement(sprite, coord, placed, tileSize);
+  return sprite;
+};
+
+const mutateTileSprite = (
+  sprite: Sprite,
+  key: TileCoordKey,
+  placed: PlacedTile,
+  tileSize: number,
+): void => {
+  const coord = decodeTileCoord(key);
+  applyPlacement(sprite, coord, placed, tileSize);
+};
+
+const applyPlacement = (
+  sprite: Sprite,
+  coord: { x: number; y: number },
+  placed: PlacedTile,
+  tileSize: number,
+): void => {
   sprite.tint = colorForTileId(placed.tileId);
   sprite.width = tileSize;
   sprite.height = tileSize;
   sprite.x = coord.x * tileSize;
   sprite.y = coord.y * tileSize;
-  return sprite;
 };

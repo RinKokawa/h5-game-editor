@@ -19,7 +19,6 @@
  * console) can show useful messages instead of catching exceptions.
  */
 
-import { commandBus } from '@core/command';
 import {
   deserializeDocument,
   serializeDocument,
@@ -28,7 +27,6 @@ import {
 } from '@core/serialization/index';
 import { asLayerId } from '@editor/map/schema/ids';
 import { useDocumentStore } from '@state/documentStore';
-import { useSelectionStore } from '@state/selectionStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 
 import { isElectron, writeDocumentInWorkspace, readDocumentInWorkspace } from './electronBridge';
@@ -59,9 +57,10 @@ export const saveDocument = async (): Promise<SaveOutcome> => {
 
     const state = useDocumentStore.getState();
     const serialized: SerializedDocumentV1 = serializeDocument({
-      tileSize: state.tileSize,
-      mapSize: state.mapSize,
+      meta: state.meta,
       layers: state.layers,
+      entities: state.entities,
+      colliders: state.colliders,
     });
     const json = JSON.stringify(serialized, null, 2);
     const targetPath = `${ws.current.path}/documents/${ws.activeDocId}.json`;
@@ -107,14 +106,17 @@ export const loadDocument = async (): Promise<LoadOutcome> => {
 };
 
 const applyLoaded = (loaded: LoadedDocument): void => {
+  // Wipe selection + history first so they don't bleed across
+  // loads. The Document store fields below overwrite the
+  // resetEditorState() defaults wholesale.
+  useWorkspaceStore.getState().resetEditorState();
   useDocumentStore.setState({
-    tileSize: loaded.tileSize,
-    mapSize: loaded.mapSize,
+    meta: loaded.meta,
     layers: loaded.layers,
+    entities: loaded.entities,
+    colliders: loaded.colliders,
     activeLayerId: asLayerId(loaded.activeLayerId),
   });
-  useSelectionStore.getState().clear();
-  commandBus.clearHistory();
 };
 
 const errMsg = (err: unknown): string => (err instanceof Error ? err.message : String(err));

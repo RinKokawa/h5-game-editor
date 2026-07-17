@@ -15,7 +15,7 @@
  * Marquee is tile-only in v0.1 (`beginMarquee`/`endMarquee` only
  * ever touch `selection.cells`). Hover is NOT stored here — it's a
  * view-only cursor indicator rendered by `SelectionOverlay` from
- * `viewStore.cursorWorld + documentStore.tileSize`. That keeps the
+ * `viewStore.cursorWorld + documentStore.meta.tileSize`. That keeps the
  * selection store independent of the active tool: hover works for
  * every tool, not just Select.
  *
