@@ -968,6 +968,53 @@ Next: Step 31 candidates — autotile/bitmap expectations for terrain
 edges (the pack ships bitmask reference sheets), flip/rotation UI for
 the brush, and workspace asset import.
 
+**Post-Step 30 patch — side panel stacks (PanelStack)** — applied. The
+side columns were reworked: docks can now be drag-reordered by their
+headers, drag-resized via splitters between them, and the old
+"content-based flex squeeze" that clipped panels at arbitrary sizes is
+gone.
+
+- `layout/PanelStack.tsx` renders one reorderable stack per side column
+  from a declarative registry (`LEFT_PANELS` / `RIGHT_PANELS` in
+  `EditorShell`). Stack order, per-panel body heights, and collapse
+  flags live in `state/layoutStore` (`leftPanelOrder` /
+  `rightPanelOrder` / `panelHeights` / `panelCollapsed`).
+- Every dock has an **explicit pixel body height**; the last expanded
+  dock ("fill") stretches to the remaining column height. A `Splitter`
+  below every expanded non-fill dock resizes that dock (clamped); the
+  fill dock absorbs the difference. When stored heights exceed the
+  column the **stack scrolls** — flexbox never squeezes a dock, which
+  is what made the old layout clip content ("truncated even with
+  height to spare").
+- `layout/panelStackMath.ts` holds the geometry as pure functions
+  (`computeStackGeometry`, `nextBodyHeight`, `moveItem`); the constants
+  `PANEL_HEADER_H` / `SPLITTER_H` mirror the CSS and are the only
+  sanctioned duplication. Splitter handlers read the store via
+  `getState()` per move so drags never apply deltas to stale heights.
+- Reordering uses HTML5 drag-and-drop on the dock header (drop on the
+  top/bottom half of another header inserts before/after it). No dnd
+  library — the stack is locked (React + Pixi + Zustand only).
+- `PanelDock` gained a controlled mode (`collapsed` / `onToggle`,
+  `variant: 'fixed' | 'fill'` + `bodyHeight`) for stacked use; the
+  bottom Console dock keeps the legacy self-managed `defaultOpen` path.
+- Layout is now **persisted to localStorage** (zustand `persist`, key
+  `h5-editor-layout`, `partialize` excludes actions). This supersedes
+  the v0.1 "no persistence" note in the store header: UI layout is not
+  Document data, and the middleware no-ops when storage is unavailable.
+  `PanelStack.normalizeOrder` drops stale ids and appends unknown ones,
+  so a persisted order can never break a changed panel registry.
+- Tests: `panelStackMath.test.ts` (geometry / clamp / moveItem) and
+  `layoutStore.test.ts` (order, height clamps, collapse, persistence
+  round-trip incl. the `{ state, version }` persist envelope).
+
+**Why explicit heights + a fill dock instead of `flex-grow` shares.**
+Content-based flex resolution was the bug: with `flex: 0 1 auto` docks
+and a `flex: 1` (basis 0) body, the resolved heights depended on
+unstable intrinsic sizes and clipped through `overflow: hidden`. Pixel
+heights make the layout deterministic and persistable, the fill dock
+keeps the column free of dead space, and the math is unit-testable
+without a DOM.
+
 ## 14. Common pitfalls to avoid
 
 - ❌ Putting tile data in Zustand. → Goes in the Document.

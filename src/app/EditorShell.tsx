@@ -16,6 +16,11 @@
  * Splitters write directly to the layout store. Panels are dumb — they
  * only render whatever their parent gives them.
  *
+ * Side columns are PanelStacks fed by declarative panel registries
+ * (LEFT_PANELS / RIGHT_PANELS). Order, heights, and collapse state live
+ * in the layout store and persist across sessions; PanelStack owns the
+ * drag-to-reorder and drag-to-resize gestures.
+ *
  * Step 11+ adds SelectionOverlay and instantiates all four tools
  * (Select, Pan, Brush, Eraser). Each tool checks the active tool id
  * before responding to events; only the active one acts.
@@ -57,6 +62,7 @@ import {
 import { CanvasArea } from '@layout/CanvasArea';
 import { PanelColumn } from '@layout/PanelColumn';
 import { PanelDock } from '@layout/PanelDock';
+import { PanelStack, type PanelSpec } from '@layout/PanelStack';
 import { Splitter } from '@layout/Splitter';
 import { AssetBrowserPanel } from '@panels/asset-browser/AssetBrowserPanel';
 import { ConsolePanel } from '@panels/console/ConsolePanel';
@@ -258,6 +264,18 @@ export function EditorShell() {
     [bottomHeight, setBottomHeight],
   );
 
+  // Declarative panel registry per side. PanelStack renders these in the
+  // order stored in the layout store (drag-to-reorder rewrites it).
+  const leftPanels: readonly PanelSpec[] = [
+    { id: 'palette', title: t('dock.palette'), render: () => <PalettePanel /> },
+    { id: 'assets', title: t('dock.assets'), render: () => <AssetBrowserPanel /> },
+    { id: 'layers', title: t('dock.layers'), render: () => <LayerPanel /> },
+  ];
+  const rightPanels: readonly PanelSpec[] = [
+    { id: 'inspector', title: t('dock.inspector'), render: () => <InspectorPanel /> },
+    { id: 'properties', title: t('dock.properties'), render: () => <PropertiesPanel /> },
+  ];
+
   const fileActions = [
     {
       labelKey: 'menu.file.save',
@@ -304,15 +322,7 @@ export function EditorShell() {
 
       <div className={styles.main}>
         <PanelColumn width={leftWidth} collapsed={leftCollapsed} side="left">
-          <PanelDock title={t('dock.palette')}>
-            <PalettePanel />
-          </PanelDock>
-          <PanelDock title={t('dock.assets')}>
-            <AssetBrowserPanel />
-          </PanelDock>
-          <PanelDock title={t('dock.layers')}>
-            <LayerPanel />
-          </PanelDock>
+          <PanelStack side="left" panels={leftPanels} />
         </PanelColumn>
 
         <Splitter direction="vertical" onResize={handleLeftResize} ariaLabel="Resize left panel" />
@@ -328,12 +338,7 @@ export function EditorShell() {
         />
 
         <PanelColumn width={rightWidth} collapsed={rightCollapsed} side="right">
-          <PanelDock title={t('dock.inspector')}>
-            <InspectorPanel />
-          </PanelDock>
-          <PanelDock title={t('dock.properties')}>
-            <PropertiesPanel />
-          </PanelDock>
+          <PanelStack side="right" panels={rightPanels} />
         </PanelColumn>
       </div>
 

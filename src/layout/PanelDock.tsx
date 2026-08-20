@@ -1,14 +1,21 @@
 /**
  * PanelDock — a single docked panel with a collapsible title bar.
  *
- * Each dock manages its own open/closed state. A parent that needs to
- * control it programmatically can wrap it with a controlled shell (later
- * steps will introduce a "Reset Layout" command, for example).
+ * Two operating modes:
+ *  - standalone (default): the dock manages its own open/closed state
+ *    (`defaultOpen`), which is what the bottom Console slot uses;
+ *  - stacked (driven by PanelStack): `collapsed` / `onToggle` control the
+ *    state from the layout store, `variant` + `bodyHeight` give the dock
+ *    an explicit size, and the header drag hooks wire reordering.
+ *
+ * The header stays interactive: the title button toggles the body, the
+ * optional `actions` slot hosts small buttons (e.g. the layer "+" menu).
  */
 
-import { useState, type ReactNode } from 'react';
+import { useState, type DragEvent, type ReactNode } from 'react';
 
 import styles from './PanelDock.module.css';
+import { PANEL_HEADER_H } from './panelStackMath';
 
 export interface PanelDockProps {
   readonly title: string;
@@ -16,19 +23,77 @@ export interface PanelDockProps {
   readonly defaultOpen?: boolean;
   /** Optional secondary action shown in the title bar (e.g. "+" menu). */
   readonly actions?: ReactNode;
+  /** Controlled collapsed state. Omitted → the dock manages its own state. */
+  readonly collapsed?: boolean;
+  readonly onToggle?: () => void;
+  /** 'fixed' sizes the dock to header + bodyHeight; 'fill' stretches to the remaining column height. */
+  readonly variant?: 'fixed' | 'fill';
+  /** Explicit body height in px (only used with variant 'fixed'). */
+  readonly bodyHeight?: number;
+  /** When true the header acts as a drag handle for reordering (PanelStack). */
+  readonly headerDraggable?: boolean;
+  readonly onHeaderDragStart?: (event: DragEvent<HTMLElement>) => void;
+  readonly onHeaderDragOver?: (event: DragEvent<HTMLElement>) => void;
+  readonly onHeaderDrop?: (event: DragEvent<HTMLElement>) => void;
+  readonly onHeaderDragEnd?: () => void;
+  /** Where the dragged dock would land if dropped on this header. */
+  readonly headerDropHint?: 'above' | 'below' | null;
+  readonly headerDragging?: boolean;
 }
 
-export function PanelDock({ title, children, defaultOpen = true, actions }: PanelDockProps) {
-  const [open, setOpen] = useState(defaultOpen);
+export function PanelDock({
+  title,
+  children,
+  defaultOpen = true,
+  actions,
+  collapsed,
+  onToggle,
+  variant = 'fixed',
+  bodyHeight,
+  headerDraggable = false,
+  onHeaderDragStart,
+  onHeaderDragOver,
+  onHeaderDrop,
+  onHeaderDragEnd,
+  headerDropHint = null,
+  headerDragging = false,
+}: PanelDockProps) {
+  const [openState, setOpenState] = useState(defaultOpen);
+  const isControlled = collapsed !== undefined;
+  const open = isControlled ? !collapsed : openState;
   const bodyId = `panel-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
+  const dockClasses = [styles.dock, variant === 'fill' ? styles.dockFill : styles.dockFixed]
+    .filter(Boolean)
+    .join(' ');
+  // Explicit height only applies to an expanded fixed dock — a collapsed
+  // dock is header-only and the fill dock stretches via flex.
+  const dockStyle =
+    variant === 'fixed' && open && bodyHeight !== undefined
+      ? { height: `${PANEL_HEADER_H + bodyHeight}px` }
+      : undefined;
+
   return (
-    <section className={styles.dock} data-collapsed={!open}>
-      <header className={styles.header}>
+    <section
+      className={dockClasses}
+      data-collapsed={!open}
+      data-drop-hint={headerDropHint ?? undefined}
+      data-dragging={headerDragging ? 'true' : undefined}
+      style={dockStyle}
+    >
+      <header
+        className={styles.header}
+        data-draggable={headerDraggable ? 'true' : undefined}
+        draggable={headerDraggable}
+        onDragStart={onHeaderDragStart}
+        onDragOver={onHeaderDragOver}
+        onDrop={onHeaderDrop}
+        onDragEnd={onHeaderDragEnd}
+      >
         <button
           type="button"
           className={styles.titleButton}
-          onClick={() => setOpen(!open)}
+          onClick={() => (onToggle ? onToggle() : setOpenState(!openState))}
           aria-expanded={open}
           aria-controls={bodyId}
         >
