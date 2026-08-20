@@ -6,6 +6,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@app': path.resolve(__dirname, './src/app'),
+      '@assets': path.resolve(__dirname, './src/assets'),
       '@core': path.resolve(__dirname, './src/core'),
       '@editor': path.resolve(__dirname, './src/editor'),
       '@canvas': path.resolve(__dirname, './src/canvas'),
