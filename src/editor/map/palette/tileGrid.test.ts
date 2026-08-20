@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { tileFrameRect, tilesetGrid } from './tileGrid';
+import { tileFrameRect, tilesetImageSize, tilesetGrid } from './tileGrid';
 
 const PACKED_16 = { tileWidth: 16, tileHeight: 16, spacing: 0, margin: 0 } as const;
 
@@ -87,5 +87,21 @@ describe('tileFrameRect', () => {
     expect(() => tileFrameRect(spec, -1)).toThrow('out of range');
     expect(() => tileFrameRect(spec, 4)).toThrow('out of range');
     expect(() => tileFrameRect(spec, 1.5)).toThrow('out of range');
+  });
+});
+
+describe('tilesetImageSize', () => {
+  it('inverts tilesetGrid for a packed sheet', () => {
+    const { columns, tileCount } = tilesetGrid(PACKED_16, 176, 112);
+    expect(tilesetImageSize({ ...PACKED_16, columns, tileCount })).toEqual({
+      width: 176,
+      height: 112,
+    });
+  });
+
+  it('accounts for spacing and margin', () => {
+    expect(
+      tilesetImageSize({ tileWidth: 16, tileHeight: 16, spacing: 1, margin: 2, columns: 2, tileCount: 2 }),
+    ).toEqual({ width: 37, height: 20 });
   });
 });

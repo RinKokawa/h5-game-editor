@@ -27,10 +27,8 @@ import { commandBus } from '@core/command/commandBusSingleton';
 import { StrokeCommand } from '@core/command/StrokeCommand';
 import { documentService } from '@core/document/documentServiceSingleton';
 import { EraseTileCommand, PlaceTileCommand } from '@editor/map/commands/index';
-import { isEraserTile } from '@editor/map/palette/defaultPalette';
 import { screenToWorld } from '@shared/math/index';
-import { useBrushStore } from '@state/brushStore';
-import { PLACEHOLDER_TILESET_ID } from '@state/documentStore';
+import { isEraserSelection, useBrushStore } from '@state/brushStore';
 import { useDocumentStore } from '@state/documentStore';
 import { useToolStore } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
@@ -172,13 +170,13 @@ export class BrushTool implements Tool {
     if (!activeLayer || activeLayer.type !== 'tile') return;
     if (activeLayer.locked) return;
 
-    const activeTileId = useBrushStore.getState().activeTileId;
+    const { activeTilesetId, activeTileId } = useBrushStore.getState();
     let cmd: Command;
-    if (isEraserTile(activeTileId)) {
+    if (isEraserSelection(activeTilesetId, activeTileId)) {
       cmd = new EraseTileCommand(activeLayer.id, coord);
     } else {
       cmd = new PlaceTileCommand(activeLayer.id, coord, {
-        tilesetId: PLACEHOLDER_TILESET_ID,
+        tilesetId: activeTilesetId,
         tileId: activeTileId,
         rotation: 0,
         flipX: false,

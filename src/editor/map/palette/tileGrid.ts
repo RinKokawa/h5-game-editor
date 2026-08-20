@@ -98,3 +98,16 @@ export const tileFrameRect = (spec: TileGridSpec, tileIndex: number): TileFrameR
     height: spec.tileHeight,
   };
 };
+
+/**
+ * Full sheet size implied by a grid spec — the inverse of
+ * {@link tilesetGrid}. Used by CSS-sprite consumers (the palette
+ * thumbnails) that need to scale the whole sheet, not one frame.
+ */
+export const tilesetImageSize = (spec: TileGridSpec): { width: number; height: number } => {
+  const rows = spec.tileCount / spec.columns;
+  return {
+    width: spec.margin * 2 + spec.columns * spec.tileWidth + (spec.columns - 1) * spec.spacing,
+    height: spec.margin * 2 + rows * spec.tileHeight + (rows - 1) * spec.spacing,
+  };
+};

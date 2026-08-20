@@ -899,6 +899,75 @@ original choice (`sandbox: true`) was the Electron docs'
 default; the docs are written for the generic case, not for an
 app whose entire renderer surface is a localhost or file:// URL.
 
+**Step 30 — Builtin tilesets (Sprout Lands) + real textures** —
+completed in three approved sub-steps (30a assets/registry, 30b
+texture pipeline, 30c brush/palette UI). The map editor now paints
+with real pixel-art terrain instead of tinted placeholders.
+
+- Four terrain sheets (grass / hills / tilled dirt / water) from the
+  free "Sprout Lands — Basic" pack live in
+  `src/assets/tilesets/sprout-lands/` (ASCII names, deduped from the
+  pack's space/underscore duplicates). All sheets are packed 16×16
+  grids (spacing 0, margin 0).
+- `editor/map/palette/tileGrid.ts` holds the pure Tiled-convention
+  grid math: `tilesetGrid` derives columns/rows/tileCount from image
+  dimensions and refuses partial grids; `tileFrameRect` maps a
+  row-major index to its pixel rect; `tilesetImageSize` is the inverse
+  (used by the palette's CSS sprites).
+- `editor/map/palette/builtinTilesets.ts` instantiates the (previously
+  dead) `Tileset` schema with ids `sprout.*`; `image.path` carries the
+  Vite-imported PNG URL. Documents store only the tileset id —
+  builtins ship with the app, never with the document.
+- `src/assets/tilesetTextureCache.ts` is the first real resident of
+  the reserved `assets/` barrel: `preloadBuiltinTilesets` loads each
+  sheet via Pixi `Assets` and slices one `Texture` per cell (nearest
+  scaleMode); `textureFor(tilesetId, tileId)` resolves synchronously.
+  EditorShell awaits the preload between `renderer.start` and view
+  construction. The cache is module-lifetime — LayerView teardown
+  destroys sprites, not textures, so StrictMode remounts reuse slices.
+- `TileLayerView.applyPlacement` assigns the sliced texture and
+  stretches it to `meta.tileSize` (16px art × tileSize 32). Two
+  fallback tiers: `placeholder.tileset` cells (pre-Step-30 documents)
+  keep their old placeholder tint; anything else unknown renders
+  magenta. `tilesEqual` was upgraded to full-`PlacedTile` equality
+  (`placedEqual`) — the old tileId-only compare predates per-tileset
+  id namespaces.
+- `brushStore` selection is now a `(tilesetId, tileId)` pair; the
+  eraser is a sentinel pair on the reserved `'eraser'` tileset id
+  (`isEraserSelection`), so it can never collide with a real tile.
+  BrushTool / RectTool place with the active tileset instead of the
+  hardcoded `PLACEHOLDER_TILESET_ID`.
+- `PalettePanel` gained a tileset dropdown plus one CSS-sprite
+  thumbnail per tile — same sheet URL, same grid math as the texture
+  cache, so panel and canvas can never disagree. `defaultPalette.ts`
+  is demoted to the placeholder fallback color table
+  (`PLACEHOLDER_COLORS`); the `palette.entry.*` i18n keys are replaced
+  by `palette.tileset.sprout.*` + `palette.eraser` in all three
+  bundles. `AssetBrowserPanel` lists the builtin sheets with tile
+  counts.
+- `vite.config.ts` raises `build.assetsInlineLimit` so the bundled
+  PNGs inline as data URLs — the packaged app loads `dist/index.html`
+  over `file://`, where absolute `/assets/...` paths cannot resolve.
+  Verified: the production bundle emits zero PNG files.
+
+**Why data URLs instead of a `public/` directory.** Public-dir assets
+keep absolute paths (`base: '/'`), which break under Electron's
+`loadFile` in production. Inlining the (all < 10 KB) sheets into the
+JS bundle sidesteps path resolution entirely without touching `base`
+and the existing chunk layout. The workspace `assets/` folder stays
+untouched — importing user assets into workspaces is a separate step.
+
+**Why the eraser moved from "tile id 0" to a reserved tileset id.**
+Real tilesets number their tiles from 0, so `tileId === 0` can no
+longer mean "erase". A sentinel pair `('eraser', 0)` keeps the eraser
+a brush-level concept (it produces `EraseTileCommand`, never a placed
+tile) without reserving a global tile id that builtin sheets would
+collide with.
+
+Next: Step 31 candidates — autotile/bitmap expectations for terrain
+edges (the pack ships bitmask reference sheets), flip/rotation UI for
+the brush, and workspace asset import.
+
 ## 14. Common pitfalls to avoid
 
 - ❌ Putting tile data in Zustand. → Goes in the Document.

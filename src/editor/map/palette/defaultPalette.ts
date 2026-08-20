@@ -1,36 +1,29 @@
 /**
- * Default tile palette (Step 8 placeholder).
+ * Placeholder palette (Step 8 → Step 30 demotion).
  *
- * Sixteen stub tiles rendered as solid colors via `Sprite(WHITE) + tint`.
- * Real tilesets with image atlases land with the assets subsystem in a
- * later step; the BrushTool and PalettePanel do not need to change then.
- *
- * Tile id 0 is reserved for the eraser (see `@state/brushStore`). Its
- * color is shown as a hatched swatch in the PalettePanel.
- *
- * `labelKey` is a bundle key, NOT a pre-translated string — PalettePanel
- * calls `t(entry.labelKey)` so swatch tooltips follow the current
- * locale without rebuilding the data table.
+ * This table used to BE the palette; since Step 30 the live palette is
+ * the builtin tileset registry (`./builtinTilesets`) and this file only
+ * serves the fallback tier in `TileLayerView`: cells placed before
+ * Step 30 carry `tilesetId: 'placeholder.tileset'` and keep rendering
+ * as these solid colors so old documents stay readable. The eraser
+ * sentinel lives in `@state/brushStore` (`isEraserSelection`).
  */
 
 import { asTileId } from '@editor/map/schema/ids';
-import { ERASER_TILE_ID } from '@state/brushStore';
 
 import type { TileId } from '@editor/map/schema/ids';
 
-export interface PaletteEntry {
+export interface PlaceholderColor {
   readonly id: TileId;
   readonly color: number;
-  readonly labelKey: string;
 }
 
-const entry = (id: number, color: number): PaletteEntry => ({
+const entry = (id: number, color: number): PlaceholderColor => ({
   id: asTileId(id),
   color,
-  labelKey: `palette.entry.${id}`,
 });
 
-export const DEFAULT_PALETTE: ReadonlyArray<PaletteEntry> = [
+export const PLACEHOLDER_COLORS: ReadonlyArray<PlaceholderColor> = [
   entry(0, 0x2a2a2a),
   entry(1, 0xb3382c),
   entry(2, 0x6c8eb3),
@@ -50,14 +43,12 @@ export const DEFAULT_PALETTE: ReadonlyArray<PaletteEntry> = [
 ];
 
 const TILE_ID_TO_COLOR = new Map<number, number>(
-  DEFAULT_PALETTE.map((e) => [e.id as unknown as number, e.color]),
+  PLACEHOLDER_COLORS.map((e) => [e.id as unknown as number, e.color]),
 );
 
 export const colorForTileId = (id: TileId): number => {
   const c = TILE_ID_TO_COLOR.get(id);
   // Fallback to white rather than throwing — a stale tile id should not
-  // crash rendering. Step 9 introduces tile-id validation.
+  // crash rendering.
   return c ?? 0xffffff;
 };
-
-export const isEraserTile = (id: TileId): boolean => id === ERASER_TILE_ID;

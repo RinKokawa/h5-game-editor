@@ -92,9 +92,14 @@ const jaJP: Bundle = {
   'layer.unlock': 'レイヤーのロックを解除',
 
   // PalettePanel
-  'palette.title': 'デフォルトパレット',
-  'palette.hint': 'タイルをクリックしてからキャンバスに描画',
+  'palette.title': 'タイルセットパレット',
+  'palette.hint': 'タイルセットとタイルを選んでキャンバスに描画',
   'palette.aria': 'タイルパレット',
+  'palette.eraser': '消しゴム',
+  'palette.tileset.sprout.grass': '草',
+  'palette.tileset.sprout.hills': '丘',
+  'palette.tileset.sprout.tilled-dirt': '耕した土',
+  'palette.tileset.sprout.water': '水',
 
   // InspectorPanel
   'inspector.empty.title': '選択なし',
@@ -126,11 +131,9 @@ const jaJP: Bundle = {
   'entity.type.door': 'ドア',
   'entity.type.pickup': 'ピックアップ',
 
-  // Asset browser folders
-  'asset.folder.tilesets': 'タイルセット',
-  'asset.folder.sprites': 'スプライト',
-  'asset.folder.audio': 'オーディオ',
-  'asset.folder.scripts': 'スクリプト',
+  // Asset browser — builtin tileset group
+  'asset.builtin.title': '内蔵 — Sprout Lands',
+  'asset.builtin.tiles': '{n} タイル',
 
   // Properties panel — key labels + empty state
   'properties.empty.title': '選択なし',
@@ -150,24 +153,6 @@ const jaJP: Bundle = {
   'properties.entityCount': 'エンティティ数',
   'properties.colliderCount': 'コライダー数',
   'properties.stale': '選択は既に存在しません。',
-
-  // Palette — per-tile swatch labels (id 0 は消しゴム)
-  'palette.entry.0': '消しゴム',
-  'palette.entry.1': 'レンガ',
-  'palette.entry.2': '水',
-  'palette.entry.3': '草地',
-  'palette.entry.4': '砂地',
-  'palette.entry.5': '石板',
-  'palette.entry.6': '壁',
-  'palette.entry.7': '木材',
-  'palette.entry.8': '雪',
-  'palette.entry.9': 'コンクリート',
-  'palette.entry.10': '砂岩',
-  'palette.entry.11': '氷',
-  'palette.entry.12': '苔',
-  'palette.entry.13': '魔法',
-  'palette.entry.14': '溶岩',
-  'palette.entry.15': '影',
 
   // Project slot
   'project.untitled': '無題のプロジェクト',

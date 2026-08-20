@@ -30,10 +30,8 @@ import { commandBus } from '@core/command/commandBusSingleton';
 import { StrokeCommand } from '@core/command/StrokeCommand';
 import { documentService } from '@core/document/documentServiceSingleton';
 import { EraseTileCommand, PlaceTileCommand } from '@editor/map/commands/index';
-import { isEraserTile } from '@editor/map/palette/defaultPalette';
 import { screenToWorld } from '@shared/math/index';
-import { useBrushStore } from '@state/brushStore';
-import { PLACEHOLDER_TILESET_ID } from '@state/documentStore';
+import { isEraserSelection, useBrushStore } from '@state/brushStore';
 import { useDocumentStore } from '@state/documentStore';
 import { useToolStore } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
@@ -239,12 +237,12 @@ export class RectTool implements Tool {
   }
 
   private makeCommand(layerId: LayerId, coord: TileCoord): Command {
-    const activeTileId = useBrushStore.getState().activeTileId;
-    if (isEraserTile(activeTileId)) {
+    const { activeTilesetId, activeTileId } = useBrushStore.getState();
+    if (isEraserSelection(activeTilesetId, activeTileId)) {
       return new EraseTileCommand(layerId, coord);
     }
     return new PlaceTileCommand(layerId, coord, {
-      tilesetId: PLACEHOLDER_TILESET_ID,
+      tilesetId: activeTilesetId,
       tileId: activeTileId,
       rotation: 0,
       flipX: false,

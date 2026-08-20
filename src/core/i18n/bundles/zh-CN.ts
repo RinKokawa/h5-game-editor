@@ -84,9 +84,14 @@ const zhCN: Bundle = {
   'layer.unlock': '解锁图层',
 
   // PalettePanel
-  'palette.title': '默认调色板',
-  'palette.hint': '点击一个瓦片,然后在画布上绘制',
+  'palette.title': '瓦片集调色板',
+  'palette.hint': '选择瓦片集和瓦片,然后在画布上绘制',
   'palette.aria': '瓦片调色板',
+  'palette.eraser': '橡皮擦',
+  'palette.tileset.sprout.grass': '草地',
+  'palette.tileset.sprout.hills': '山丘',
+  'palette.tileset.sprout.tilled-dirt': '耕地',
+  'palette.tileset.sprout.water': '水',
 
   // InspectorPanel
   'inspector.empty.title': '当前无选区',
@@ -116,11 +121,9 @@ const zhCN: Bundle = {
   'entity.type.door': '门',
   'entity.type.pickup': '可拾取物',
 
-  // Asset browser folders
-  'asset.folder.tilesets': '瓦片集',
-  'asset.folder.sprites': '精灵图',
-  'asset.folder.audio': '音频',
-  'asset.folder.scripts': '脚本',
+  // Asset browser — builtin tileset group
+  'asset.builtin.title': '内置 — Sprout Lands',
+  'asset.builtin.tiles': '{n} 个瓦片',
 
   // Properties panel — key labels + empty state
   'properties.empty.title': '当前无选区',
@@ -140,23 +143,6 @@ const zhCN: Bundle = {
   'properties.colliderCount': '碰撞体数',
   'properties.stale': '当前选区已不存在。',
 
-  // Palette — per-tile swatch labels (id 0 是橡皮)
-  'palette.entry.0': '橡皮',
-  'palette.entry.1': '砖块',
-  'palette.entry.2': '水',
-  'palette.entry.3': '草地',
-  'palette.entry.4': '沙地',
-  'palette.entry.5': '石板',
-  'palette.entry.6': '墙体',
-  'palette.entry.7': '木板',
-  'palette.entry.8': '雪地',
-  'palette.entry.9': '混凝土',
-  'palette.entry.10': '砂岩',
-  'palette.entry.11': '冰面',
-  'palette.entry.12': '苔藓',
-  'palette.entry.13': '魔法',
-  'palette.entry.14': '熔岩',
-  'palette.entry.15': '阴影',
 
   // Project slot
   'project.untitled': '未命名项目',

@@ -27,9 +27,23 @@
   color: var(--color-text-muted);
 }
 
+.tilesetSelect {
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  outline: none;
+}
+
+.tilesetSelect:focus-visible {
+  border-color: var(--color-accent);
+}
+
 .swatchGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
   gap: 4px;
   padding: 4px;
   background: var(--color-bg-elevated);
@@ -41,9 +55,11 @@
 }
 
 .swatch {
-  position: relative;
-  aspect-ratio: 1;
-  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
   border: 2px solid transparent;
   border-radius: 2px;
   cursor: pointer;
@@ -62,6 +78,7 @@
 }
 
 .swatch[data-eraser='true'] {
+  background-color: var(--color-bg);
   background-image: repeating-linear-gradient(
     45deg,
     transparent,
@@ -71,13 +88,11 @@
   );
 }
 
-.swatchId {
-  position: absolute;
-  bottom: 1px;
-  right: 3px;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.75);
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
-  font-family: var(--font-mono, monospace);
+.sprite {
+  display: block;
+  width: 32px;
+  height: 32px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
   pointer-events: none;
 }

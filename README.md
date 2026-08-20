@@ -141,10 +141,19 @@ disabled with an inline hint to use `npm run electron:dev` instead.
 | 17   | Editor UI i18n (English / 简体中文 / 日本語)   | ✅     |
 | 18   | Workspace + Launcher (Electron-only)           | ✅     |
 | 19   | Selection model + PropertiesPanel real data     | ✅     |
+| 30   | Builtin tilesets (Sprout Lands) + real textures | ✅     |
 
 Future editor types (Dialogue, Animation, Quest, Inventory, Skill,
 Cutscene, Node, Localization, Timeline, Particle) plug into the existing
 `core/` and `editor/` registries without architectural changes.
+
+## Asset credits
+
+The bundled terrain sheets (grass, hills, tilled dirt, water) are from
+**"Sprout Lands — Sprite pack (Basic)"** by Eric Bernier (free pack,
+`sprout-lands` on itch.io), shipped under `src/assets/tilesets/`.
+Documents reference them by builtin tileset id (`sprout.*`); the sheets
+themselves are part of the app, not of any workspace.
 
 ## Contributing
 

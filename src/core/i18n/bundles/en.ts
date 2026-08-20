@@ -85,9 +85,14 @@ const en: Bundle = {
   'layer.unlock': 'Unlock layer',
 
   // PalettePanel
-  'palette.title': 'Default palette',
-  'palette.hint': 'Click a tile, then paint on the canvas',
+  'palette.title': 'Tileset palette',
+  'palette.hint': 'Pick a tileset and tile, then paint',
   'palette.aria': 'Tile palette',
+  'palette.eraser': 'Eraser',
+  'palette.tileset.sprout.grass': 'Grass',
+  'palette.tileset.sprout.hills': 'Hills',
+  'palette.tileset.sprout.tilled-dirt': 'Tilled Dirt',
+  'palette.tileset.sprout.water': 'Water',
 
   // InspectorPanel
   'inspector.empty.title': 'No selection',
@@ -117,11 +122,9 @@ const en: Bundle = {
   'entity.type.door': 'Door',
   'entity.type.pickup': 'Pickup',
 
-  // Asset browser folders
-  'asset.folder.tilesets': 'tilesets',
-  'asset.folder.sprites': 'sprites',
-  'asset.folder.audio': 'audio',
-  'asset.folder.scripts': 'scripts',
+  // Asset browser — builtin tileset group
+  'asset.builtin.title': 'Built-in — Sprout Lands',
+  'asset.builtin.tiles': '{n} tiles',
 
   // Properties panel — key labels + empty state
   'properties.empty.title': 'No selection',
@@ -140,24 +143,6 @@ const en: Bundle = {
   'properties.entityCount': 'entities',
   'properties.colliderCount': 'colliders',
   'properties.stale': 'Selection no longer exists.',
-
-  // Palette — per-tile swatch labels (id 0 is the eraser)
-  'palette.entry.0': 'Eraser',
-  'palette.entry.1': 'Brick',
-  'palette.entry.2': 'Water',
-  'palette.entry.3': 'Grass',
-  'palette.entry.4': 'Sand',
-  'palette.entry.5': 'Stone',
-  'palette.entry.6': 'Wall',
-  'palette.entry.7': 'Wood',
-  'palette.entry.8': 'Snow',
-  'palette.entry.9': 'Concrete',
-  'palette.entry.10': 'Sandstone',
-  'palette.entry.11': 'Ice',
-  'palette.entry.12': 'Moss',
-  'palette.entry.13': 'Magic',
-  'palette.entry.14': 'Lava',
-  'palette.entry.15': 'Shadow',
 
   // Project slot
   'project.untitled': 'Untitled Project',
