@@ -5,9 +5,10 @@
  * audio). Files are referenced by URL/path; assets themselves are
  * not inlined into the Document schema.
  *
- * Reserved for Step N+: the v0.1 palette is a placeholder defined
- * in `editor/map/palette/defaultPalette.ts` and the EntityTool uses
- * a stub renderer. Once a real tileset format lands, this barrel
- * becomes the host for tileset loaders + the URL→Texture cache.
+ * Step 30 hosts the first real loader: builtin tileset sheets are
+ * preloaded through Pixi's `Assets` and sliced into per-tile textures
+ * (see `tilesetTextureCache.ts`). Workspace-imported assets (the
+ * workspace `assets/` folder) land with the asset-import step.
  */
-export {};
+
+export { preloadBuiltinTilesets, textureFor } from './tilesetTextureCache';

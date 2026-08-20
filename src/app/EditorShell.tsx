@@ -36,6 +36,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
+import { preloadBuiltinTilesets } from '@assets';
 import { Camera } from '@canvas/camera/Camera';
 import { CollisionLayerView } from '@canvas/collision-layer/CollisionLayerView';
 import { GridView } from '@canvas/grid/GridView';
@@ -166,7 +167,13 @@ export function EditorShell() {
     let cancelled = false;
     renderer
       .start(host)
-      .then(() => {
+      .then(async () => {
+        if (cancelled || renderer.isDestroyed()) return;
+        // Tileset sheets must be sliced into textures before the tile
+        // view's first render, or every cell would flash the fallback
+        // tint. Memoized by the cache — the StrictMode double mount
+        // reuses the first pass.
+        await preloadBuiltinTilesets();
         if (cancelled || renderer.isDestroyed()) return;
         const camera = new Camera(renderer);
         cameraRef.current = camera;

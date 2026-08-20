@@ -18,7 +18,6 @@ import grassImageUrl from '@assets/tilesets/sprout-lands/grass.png';
 import hillsImageUrl from '@assets/tilesets/sprout-lands/hills.png';
 import tilledDirtImageUrl from '@assets/tilesets/sprout-lands/tilled-dirt.png';
 import waterImageUrl from '@assets/tilesets/sprout-lands/water.png';
-
 import { asTilesetId } from '@editor/map/schema/ids';
 
 import { tilesetGrid } from './tileGrid';

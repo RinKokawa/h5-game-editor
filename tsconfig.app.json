@@ -26,6 +26,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@app/*": ["src/app/*"],
+      "@assets": ["src/assets/index.ts"],
       "@assets/*": ["src/assets/*"],
       "@core/*": ["src/core/*"],
       "@editor/*": ["src/editor/*"],

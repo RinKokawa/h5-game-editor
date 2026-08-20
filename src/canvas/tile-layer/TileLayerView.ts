@@ -11,14 +11,18 @@
  * and drop/add/reorder (see {@link LayerView}). This subclass owns
  * per-layer sprite pools and the no-op skipping logic that decides
  * between "skip" and "diff".
+ *
+ * Step 30 swaps the tinted-rectangle placeholder for real tileset
+ * textures resolved through `@assets/tilesetTextureCache`.
  */
 
 import { Sprite, Texture } from 'pixi.js';
 
+import { textureFor } from '@assets/tilesetTextureCache';
 import { LayerView } from '@canvas/layers/LayerView';
 import { colorForTileId } from '@editor/map/palette/defaultPalette';
 import { decodeTileCoord } from '@editor/map/schema/tile';
-import { useDocumentStore } from '@state/documentStore';
+import { PLACEHOLDER_TILESET_ID, useDocumentStore } from '@state/documentStore';
 
 
 import type { LayerNode } from '@canvas/layers/LayerView';
@@ -77,6 +81,19 @@ export class TileLayerView extends LayerView<TileLayer> {
 
 const tileSize = (): number => useDocumentStore.getState().meta.tileSize;
 
+/**
+ * Full-field PlacedTile equality — exported for tests. Rotation and
+ * flip are compared even though the renderer ignores them yet, so the
+ * diff stays honest with the schema (Step 23 compared `tileId` only,
+ * which predates real tilesets with per-tilesetId namespaces).
+ */
+export const placedEqual = (a: PlacedTile, b: PlacedTile): boolean =>
+  a.tilesetId === b.tilesetId &&
+  a.tileId === b.tileId &&
+  a.rotation === b.rotation &&
+  a.flipX === b.flipX &&
+  a.flipY === b.flipY;
+
 const tilesEqual = (
   a: ReadonlyMap<TileCoordKey, PlacedTile>,
   b: ReadonlyMap<TileCoordKey, PlacedTile>,
@@ -85,7 +102,7 @@ const tilesEqual = (
   if (a.size !== b.size) return false;
   for (const [key, placed] of a) {
     const other = b.get(key);
-    if (!other || other.tileId !== placed.tileId) return false;
+    if (!other || !placedEqual(other, placed)) return false;
   }
   return true;
 };
@@ -146,13 +163,34 @@ const mutateTileSprite = (
   applyPlacement(sprite, coord, placed, tileSize);
 };
 
+/** Magenta reads as "texture missing" — an error state, not art. */
+const MISSING_TEXTURE_TINT = 0xff00ff;
+
+/**
+ * Textured placement (Step 30): resolve the sliced tile texture and
+ * stretch it to `tileSize` (16px art at tileSize 32 stays crisp via
+ * nearest sampling, set by the texture cache). Two fallback tiers keep
+ * the canvas honest without crashing:
+ *
+ * - `placeholder.tileset` cells (pre-Step-30 documents / palette) keep
+ *   their old placeholder tint — readable, and clearly not real art.
+ * - anything else unknown or not yet loaded renders magenta.
+ */
 const applyPlacement = (
   sprite: Sprite,
   coord: { x: number; y: number },
   placed: PlacedTile,
   tileSize: number,
 ): void => {
-  sprite.tint = colorForTileId(placed.tileId);
+  const texture = textureFor(placed.tilesetId, placed.tileId);
+  sprite.texture = texture ?? Texture.WHITE;
+  if (texture) {
+    sprite.tint = 0xffffff;
+  } else if (placed.tilesetId === PLACEHOLDER_TILESET_ID) {
+    sprite.tint = colorForTileId(placed.tileId);
+  } else {
+    sprite.tint = MISSING_TEXTURE_TINT;
+  }
   sprite.width = tileSize;
   sprite.height = tileSize;
   sprite.x = coord.x * tileSize;

@@ -31,7 +31,10 @@ export class PixiRenderer {
     await app.init({
       background: 0x1a1a1a,
       backgroundAlpha: 1,
-      antialias: true,
+      // Pixel art: MSAA blurs upscaled 16px tiles. Crisp edges beat
+      // smooth diagonals here (nearest sampling lives in the texture
+      // cache, which sets `scaleMode` on every tileset source).
+      antialias: false,
       resolution: window.devicePixelRatio,
       autoDensity: true,
       resizeTo: host,
