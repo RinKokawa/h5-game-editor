@@ -26,6 +26,12 @@
   --size-statusbar: 24px;
   --size-palette: 280px;
   --size-inspector: 320px;
+
+  --scrollbar-size: 8px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(212, 212, 212, 0.2);
+  --scrollbar-thumb-hover: rgba(212, 212, 212, 0.35);
+  --scrollbar-thumb-active: rgba(212, 212, 212, 0.5);
 }
 
 * {
@@ -77,4 +83,48 @@ button:focus-visible {
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+/*
+ * Scrollbars — VS Code-style thin thumb, theme-matched.
+ *
+ * Two layers:
+ *  - `scrollbar-width` / `scrollbar-color`: Firefox standard, supported by
+ *    Chromium 121+ (Electron 43 ships Chromium 130+). Two-tone thumb/track.
+ *  - `::-webkit-scrollbar-*`: WebKit / Chromium pseudo-elements for the
+ *    rounded thumb and the three-state color (default / hover / active).
+ *
+ * Applied to `*` so every overflow:auto panel inherits. Individual modules
+ * can still override with higher specificity if a region needs different
+ * chrome.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
