@@ -25,5 +25,8 @@ Thumbs.db
 # TypeScript incremental build artifacts
 *.tsbuildinfo
 
-# Claude / AI tooling — project-level skills in .claude/skills/ are tracked.
-# Per-user files (settings.json, commands/, agents/) should be added here when they appear.
+# Claude / AI tooling — only project-level skills are tracked.
+# Anything else in .claude/ (settings, commands, agents, caches) stays local.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
