@@ -300,6 +300,16 @@
 
 ---
 
+## Patch — docs/frontend-structure.md + scripts/generate-frontend-tree.mjs — 2026-08-21
+
+**做了什么** — 新增 `docs/frontend-structure.md`（约 250 行）：React 组件树、编辑器壳、侧栏面板层、面板清单、PixiJS 场景图、CSS module 映射、跨层通信示例、src/ 文件树快照、维护规则表。新增 `scripts/generate-frontend-tree.mjs` 扫 `src/` 输出文件树骨架，`npm run docs:tree` 触发。CLAUDE.md §13 加指针到新文档，project-docs skill 加"改前端组件必同步更新"触发表。
+
+**为什么** — 当前各叶子目录 `index.ts` 有模块级 README 注释，但**顶层 React 树 / PixiJS 场景图 / CSS 映射没有任何文档**，只能读代码判断结构。新人 onboarding、跨编辑器复用、未来 AI 助手都受益于一张"前端长啥样"的统一参考。脚本负责**结构骨架**（易漂移、扫出来就对），手写负责**意图**（边界判定原则、跨层通信、维护触发表）。
+
+**为什么是 plain `.mjs` 而非 `.ts`** — 文档维护工具不该需要编译。`.mjs` 用 Node 20+ 原生 ESM，零依赖，零编译成本，跟 lint/typecheck/build 完全解耦。
+
+---
+
 ## v0.1 closed loop + 5-year skeleton（Step 1-12） — 2026-07 之前
 
 已完成的早期 step 详见 `README.md` 的 Roadmap 表。架构决策（Document 单一源、Command 总线、模块边界、命名约定）即从那时沉淀下来作为本档当前生效的 §1-§15 规则。

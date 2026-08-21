@@ -116,9 +116,28 @@ type: project
 
 "Current Capabilities" 列**用户能做的事**（不是内部组件）。从源码事实写，不是从文档抄。
 
-## docs/ 目录（未来）
+## docs/ 目录
 
-如果某主题需要超过 CHANGELOG 的篇幅（教程、API 参考、ADR 集合），建 `docs/<topic>.md` 并在 CLAUDE.md §13 旁加一行指针。
+`docs/` 是详细文档的家。第一个住户是 `docs/frontend-structure.md` —
+描述前端层级（React 树 / PixiJS 场景图 / CSS module 映射）。脚本
+`scripts/generate-frontend-tree.mjs`（`npm run docs:tree`）生成文件树
+骨架。脚本输出与手写 narrative 配合。
+
+如果某主题需要超过 CHANGELOG 的篇幅（教程、API 参考、ADR 集合），建
+`docs/<topic>.md` 并在 CLAUDE.md §13 旁加一行指针。
+
+### 维护触发
+
+| 改动 | 必须同步 |
+|------|----------|
+| 加新 React 组件 / 面板 / 工具 | `docs/frontend-structure.md` 对应章节 |
+| 改 EditorShell grid / PanelStack 行为 | §2.x |
+| 加新 PixiJS 子系统 | §3 |
+| 加新 CSS module | §4 |
+| 任何 src/ 文件变动 | 重跑 `npm run docs:tree`，比对 §6 是否漂移 |
+
+文档与代码漂移是技术债。改前端组件前先看文档，确认你即将做的事没破坏
+文档承诺的层级关系；改完检查是否需要补文档。
 
 ## 常用查询（AI 助手用）
 

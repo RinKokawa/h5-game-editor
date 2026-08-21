@@ -145,6 +145,7 @@ export default tseslint.config(
       'release',
       'node_modules',
       'coverage',
+      'scripts',
       '*.config.js',
       '*.config.ts',
     ],

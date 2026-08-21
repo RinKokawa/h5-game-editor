@@ -159,6 +159,9 @@ React 面板重渲染                   帧
 最新完成 + 历史 step 列表见 [`CHANGELOG.md`](./CHANGELOG.md)。
 加新 step 前先读最后几节，确保衔接顺。
 
+前端结构层级（React 组件树、PixiJS 场景图、CSS module 映射、维护规则）见
+[`docs/frontend-structure.md`](./docs/frontend-structure.md)。改组件前先看。
+
 ## 14. 常见陷阱
 
 - ❌ 把 tile 数据放 Zustand。→ 放 Document。

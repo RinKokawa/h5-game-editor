@@ -16,6 +16,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,md}\" \"*.{ts,tsx,js,cjs,mjs,json,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
+    "docs:tree": "node scripts/generate-frontend-tree.mjs",
     "build:electron-renderer": "vite build",
     "build:electron-main": "tsc -p tsconfig.node.json",
     "build:electron": "npm run build && npm run build:electron-main",
