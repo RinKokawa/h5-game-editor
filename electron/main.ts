@@ -67,6 +67,13 @@ let mainWindow: BrowserWindow | null = null;
 // `app:confirmClose` IPC sets this back to true when it's actually OK
 // to tear the window down (e.g. we're already on the Launcher page).
 let isQuitting = false;
+// Failsafe timer set by the close interceptor. If the renderer
+// doesn't respond with `app:confirmClose` within this window (e.g.
+// it crashed during boot and the user is staring at a blank
+// window), the timer flips `isQuitting` and force-closes the
+// window so the user isn't trapped. Cleared by `app:confirmClose`
+// when the renderer does respond.
+let forceCloseTimer: NodeJS.Timeout | null = null;
 
 const createWindow = (): BrowserWindow => {
   const win = new BrowserWindow({
@@ -105,10 +112,24 @@ const createWindow = (): BrowserWindow => {
   // window is already on the Launcher page). `isQuitting` short-
   // circuits this on real shutdowns so `app:confirmClose`'s
   // `mainWindow.close()` doesn't loop.
+  //
+  // Failsafe: if the renderer never responds (e.g. it crashed during
+  // boot, the user is staring at a blank window) the module-level
+  // `forceCloseTimer` fires after 2 s and tears the window down so
+  // the user isn't trapped. `app:confirmClose` clears that timer
+  // when the renderer does respond.
   win.on('close', (event) => {
     if (isQuitting) return;
+    event.preventDefault();
+
+    if (forceCloseTimer) clearTimeout(forceCloseTimer);
+    forceCloseTimer = setTimeout(() => {
+      forceCloseTimer = null;
+      isQuitting = true;
+      if (!win.isDestroyed()) win.close();
+    }, 2000);
+
     if (!win.webContents.isDestroyed()) {
-      event.preventDefault();
       win.webContents.send('app:before-close');
     }
   });
@@ -495,10 +516,15 @@ const registerIpc = (): void => {
   // `app:before-close` (sent above when the OS close gesture fires);
   // once it has decided to actually quit (e.g. we're already on the
   // Launcher page, or the user picked Quit from a menu) it calls
-  // `app:confirmClose`, which flips `isQuitting` so the next close
-  // attempt lands cleanly.
+  // `app:confirmClose`, which clears the failsafe timer (so the
+  // force-close doesn't fire) and flips `isQuitting` so the next
+  // close attempt lands cleanly.
   ipcMain.handle('app:confirmClose', (): { ok: true } | { ok: false; error: string } => {
     if (!mainWindow) return { ok: false, error: 'No main window' };
+    if (forceCloseTimer) {
+      clearTimeout(forceCloseTimer);
+      forceCloseTimer = null;
+    }
     isQuitting = true;
     if (!mainWindow.isDestroyed()) mainWindow.close();
     return { ok: true };

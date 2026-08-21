@@ -68,6 +68,20 @@
 
 ---
 
+## Patch — packaged build 白屏 + 关不掉 — 2026-08-21
+
+**做了什么** — 修两个 release-mode bug：
+- `vite.config.ts` 加 `base: './'`，让 `dist/index.html` 引用 `./assets/...` 而不是 `/assets/...`。
+- `electron/main.ts` close 拦截加 2 秒 `forceCloseTimer` 兜底，renderer 没响应就强退。
+
+**为什么 vite.base** — Vite 默认 `base: '/'` 让 index.html 里 `<script src="/assets/...">` 用绝对路径。Dev 模式走 `http://localhost:5173`，绝对路径解析到 dev server 没问题。**Packaged Electron 用 `loadFile` → `file://` 协议**，绝对路径解析到文件系统根（Windows 上 `file:///C:/assets/...`），404 → JS 不加载 → 白屏。`base: './'` 让路径相对 HTML 文件自身，`file://` 协议下能解析。
+
+**为什么 close failsafe** — `c11d49d` 提的 close handshake（X → ping renderer → renderer 调 `confirmClose`）假设 renderer 活着。如果 renderer boot 时崩了（白屏），ping 永远没回，`preventDefault` 让窗口关不掉，用户只能 task manager 杀进程。Failsafe：setTimeout 2 秒，renderer 没响应就 `isQuitting = true` + `close()`。`confirmClose` handler 调时会 clear 这个 timer。
+
+**为什么是 2 秒不是更长** — 2 秒够健康 renderer 响应（state transition 是同步的），又不至于让崩溃场景下的用户等太久。如果以后发现不够可以调高，但先短。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

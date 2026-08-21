@@ -3,6 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 export default defineConfig({
+  // Relative base path: required for the packaged Electron app, which
+  // loads dist/index.html over `file://`. Absolute paths like
+  // `/assets/index-xxx.js` would resolve to the filesystem root
+  // (e.g. `file:///C:/assets/...` on Windows) and 404. With
+  // `base: './'`, Vite emits `<script src="./assets/...">` so each
+  // URL resolves relative to the HTML file's own directory.
+  base: './',
   plugins: [react()],
   resolve: {
     alias: {
@@ -29,9 +36,10 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
-    // Inline bundled tileset PNGs (all < 10 KB) as data URLs. The packaged
-    // Electron app loads dist/index.html over file://, where absolute asset
-    // paths (`/assets/...`) do not resolve — data URLs sidestep that entirely.
+    // Inline bundled tileset PNGs (all < 10 KB) as data URLs. Same
+    // `file://` reasoning as `base: './'` — relative paths would
+    // still work for PNGs, but data URLs sidestep any future path
+    // resolution edge cases.
     assetsInlineLimit: 100_000,
   },
 });
