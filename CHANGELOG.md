@@ -121,6 +121,18 @@
 
 ---
 
+## Patch — dev 模式 BrowserWindow 不显 icon — 2026-08-21
+
+**做了什么** — `electron/main.ts` 的 `BrowserWindow` 构造加 `icon: path.join(__dirname, '..', '..', 'build', 'icon.png')`。
+
+**为什么** — packaged .exe 的图标来自 electron-builder 把 `build/icon.png` 嵌进 .exe 资源（OS 从可执行文件读），所以 packaged 任务栏/Alt-Tab 显示正常。dev 模式 `npm run electron:dev` 用的是 stock electron.exe，没嵌入图标；BrowserWindow 不显式设 `icon` 选项时显示 Electron 默认 logo。
+
+dev 路径解析：`__dirname` = `dist-electron/electron/`，`'..', '..'` 回到项目根 → `build/icon.png` ✓。Packaged 路径解析：`__dirname` = `<app.asar>/dist-electron/electron/`，回到 `<app.asar>/`，但 `build/` 不在 asar（electron-builder.yml 的 files 列表没包含）→ 文件找不到 → Windows OS 兜底用 .exe 嵌入图标，不影响。
+
+**为什么不用 `isDev` 分支** — 一份代码双行为更稳；packaged 路径找不到 icon 时 OS 兜底，不需要 if/else 切换。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

@@ -83,6 +83,14 @@ const createWindow = (): BrowserWindow => {
     minHeight: 600,
     title: 'H5 Game Editor',
     backgroundColor: EDITOR_BG,
+    // Window icon: in dev mode the executable is the stock Electron
+    // binary (no embedded icon), so we must point BrowserWindow at
+    // `build/icon.png` directly. In packaged mode the executable has
+    // the icon embedded by electron-builder (via `win.icon` in
+    // electron-builder.yml) and the OS uses that — pointing here
+    // either works (the file resolves through asar) or is harmlessly
+    // ignored in favor of the embedded icon.
+    icon: path.join(__dirname, '..', '..', 'build', 'icon.png'),
     // On Windows 11, Mica gives the OS chrome a tinted backdrop that
     // adopts the editor's dark theme instead of the default white.
     // On macOS the title bar picks up the `backgroundColor` directly.
