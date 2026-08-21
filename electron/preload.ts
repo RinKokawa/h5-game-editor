@@ -98,6 +98,7 @@ export interface H5Bridge {
   readonly onBeforeClose: (handler: () => void) => void;
   readonly offBeforeClose: (handler: () => void) => void;
   readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  readonly cancelClose: () => Promise<{ ok: true }>;
 }
 
 // Bridge the renderer's listener set to the main process's
@@ -153,6 +154,7 @@ const api: H5Bridge = {
   },
   confirmClose: (): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('app:confirmClose'),
+  cancelClose: (): Promise<{ ok: true }> => ipcRenderer.invoke('app:cancelClose'),
 };
 
 contextBridge.exposeInMainWorld('h5', api);

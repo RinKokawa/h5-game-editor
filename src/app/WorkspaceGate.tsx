@@ -31,7 +31,7 @@
 import { useEffect } from 'react';
 
 import { useWorkspaceStore } from '@state/workspaceStore';
-import { confirmClose, onBeforeClose } from '@systems/persistence/electronBridge';
+import { cancelClose, confirmClose, onBeforeClose } from '@systems/persistence/electronBridge';
 
 import { EditorShell } from './EditorShell';
 import { Launcher } from './launcher/Launcher';
@@ -47,6 +47,10 @@ export function WorkspaceGate(): React.ReactElement {
         // EditorShell unmounts and its cleanup (tool teardown, log
         // unsubscribe, title reset) runs normally.
         useWorkspaceStore.getState().leave();
+        // Ack the gesture so the main process's 2-second failsafe
+        // timer doesn't fire and force-close the window while the
+        // user is still on the Launcher page.
+        void cancelClose();
       } else {
         // Already on the Launcher; no workspace to return to. The
         // user's intent was to quit, so let the close go through.

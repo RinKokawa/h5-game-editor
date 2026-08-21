@@ -86,6 +86,7 @@ export interface H5Bridge {
   readonly onBeforeClose: (handler: () => void) => void;
   readonly offBeforeClose: (handler: () => void) => void;
   readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  readonly cancelClose: () => Promise<{ ok: true }>;
 }
 
 declare global {
@@ -232,4 +233,20 @@ export const confirmClose = async (): Promise<
   const bridge = window.h5;
   if (!bridge) return { ok: false, error: 'Electron bridge not available' };
   return bridge.confirmClose();
+};
+
+/**
+ * Acknowledge that the close gesture has been handled without
+ * actually closing the window. Called by the renderer when it
+ * responds to `onBeforeClose` by flipping phase back to the
+ * Launcher (via `leave()`). Without this ack the main process's
+ * 2-second failsafe timer would fire and force-close the window
+ * even though the user just wanted to return to the Launcher.
+ *
+ * Outside Electron (browser / vitest) this is a no-op.
+ */
+export const cancelClose = async (): Promise<{ ok: true }> => {
+  const bridge = window.h5;
+  if (!bridge) return { ok: true };
+  return bridge.cancelClose();
 };

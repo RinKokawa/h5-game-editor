@@ -519,6 +519,14 @@ const registerIpc = (): void => {
   // `app:confirmClose`, which clears the failsafe timer (so the
   // force-close doesn't fire) and flips `isQuitting` so the next
   // close attempt lands cleanly.
+  //
+  // When the renderer decides to keep the window alive (e.g. the
+  // editor was open and `leave()` flipped phase back to the
+  // Launcher), it calls `app:cancelClose` instead. That handshake
+  // exists *only* to clear the failsafe timer — without it the
+  // renderer would never ack the gesture, the 2-second timer would
+  // fire, and the window would close even though the user just
+  // wanted to return to the Launcher.
   ipcMain.handle('app:confirmClose', (): { ok: true } | { ok: false; error: string } => {
     if (!mainWindow) return { ok: false, error: 'No main window' };
     if (forceCloseTimer) {
@@ -527,6 +535,14 @@ const registerIpc = (): void => {
     }
     isQuitting = true;
     if (!mainWindow.isDestroyed()) mainWindow.close();
+    return { ok: true };
+  });
+
+  ipcMain.handle('app:cancelClose', (): { ok: true } => {
+    if (forceCloseTimer) {
+      clearTimeout(forceCloseTimer);
+      forceCloseTimer = null;
+    }
     return { ok: true };
   });
 };

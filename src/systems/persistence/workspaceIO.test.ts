@@ -47,6 +47,7 @@ const stubBridge = (impl: Partial<H5Bridge> = {}): H5Bridge => {
     onBeforeClose: vi.fn(),
     offBeforeClose: vi.fn(),
     confirmClose: vi.fn(() => Promise.resolve({ ok: true as const })),
+    cancelClose: vi.fn(() => Promise.resolve({ ok: true as const })),
   };
   return { ...defaults, ...impl };
 };

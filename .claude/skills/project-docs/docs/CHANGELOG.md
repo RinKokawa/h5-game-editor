@@ -82,6 +82,18 @@
 
 ---
 
+## Patch — 修 close failsafe 在 leave 路径误触发 — 2026-08-21
+
+**做了什么** — 加 `app:cancelClose` IPC：renderer 处理 `app:before-close` 后（无论是 `leave()` 翻回 Launcher 还是 `confirmClose()` 真关）都 ack 一下，让 main 清掉 failsafe timer。renderer 端 WorkspaceGate 在 leave 后调 `cancelClose()`。
+
+**为什么** — 上一条 patch 加的 2 秒 `forceCloseTimer` 是给"renderer 死了"做兜底。但 leave 路径里 renderer **不调** confirmClose（leave 是"留着窗口"），所以 timer 永远没人清。用户点 X 进 Launcher，再点 workspace 进 editor → 2 秒后 timer 触发 → `isQuitting = true` + `win.close()` → 窗口关 → app 退。
+
+加 cancelClose 让 leave 路径也能 ack，timer 正常清掉。confirmClose 路径不影响（confirmClose 自己清 timer + 走 close）。
+
+**为什么不在 main 里让 timer 只在 renderer 死了时存在** — 需要 renderer 状态。phase 住 renderer state，main 不知道当前是 editor 还是 launcher。给 renderer 一个 ack 接口比让 main 问 phase 干净。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。
