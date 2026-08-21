@@ -19,6 +19,22 @@ type: project
 
 写之前先问："这条信息属于哪种角色？放错档会成为噪音。"
 
+## 这个 skill 自带的 reference docs
+
+为了让 skill 启动时能一次性把项目历史读全，CHANGELOG 也在 skill 目录里放了一份镜像：
+
+```
+.claude/skills/project-docs/
+├── SKILL.md           ← 本文件：约定与查询路径
+└── docs/
+    └── CHANGELOG.md   ← 镜像（项目根 CHANGELOG.md 的快照）
+```
+
+**项目根 `CHANGELOG.md` 是权威源。** 每次新增 step 改项目根 CHANGELOG.md 后，**同步把改动 copy 一份到这个 `docs/` 子目录**。两份不一致以项目根为准；本 skill 启动时优先读项目根，找不到再读 skill 自带那份。
+
+> Windows 上没法创建 symbolic link（需管理员），所以这里用 copy 而非 symlink。
+> Linux/mac 上若有同等限制也走 copy。
+
 ## CLAUDE.md 怎么读
 
 按这个顺序读，最有效：
@@ -120,3 +136,4 @@ type: project
 3. 如果是历史，能说清"为什么"吗？不能就别记 — 没有 why 的条目是噪音。
 4. 如果是用户可见功能，README.md 也更新了吗？（仅 README 关心的事项。）
 5. 中文写了吗？（CLAUDE.md / CHANGELOG.md 是中文，README.md 是英文。）
+6. **项目根 CHANGELOG.md 改了吗？如果改了，skill 里 `docs/CHANGELOG.md` 同步 copy 了吗？**
