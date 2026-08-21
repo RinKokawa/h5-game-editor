@@ -116,7 +116,12 @@ const createWindow = (): BrowserWindow => {
   if (isDev) {
     void win.loadURL(RENDERER_DEV_URL);
   } else {
-    void win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    // Packaged: __dirname is `<app.asar>/dist-electron/electron/`. The
+    // Vite-built renderer lives at `<app.asar>/dist/index.html`, so
+    // step up two levels (out of `electron/`, then out of
+    // `dist-electron/`). One `..` would land in `dist-electron/` and
+    // miss `dist/` entirely.
+    void win.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
   }
 
   return win;

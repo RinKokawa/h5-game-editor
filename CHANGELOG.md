@@ -58,6 +58,16 @@
 
 ---
 
+## Patch — 修 packaged build 空白（prod dist 路径少一层）— 2026-08-21
+
+**做了什么** — `electron/main.ts` 的 `loadFile` 路径从 `path.join(__dirname, '..', 'dist', 'index.html')` 改成 `'..', '..', 'dist', 'index.html'`。
+
+**为什么** — tsconfig.node.json 的 `rootDir: "."` 加上 `include: ["electron/**/*"]` 把 `electron/main.ts` 编译到 `dist-electron/electron/main.js`。Packaged 后 main.js 落在 `<app.asar>/dist-electron/electron/main.js`，`__dirname` 就在那。原代码 `..` 只上一级到 `dist-electron/`，找不到 `dist/index.html`。Dev 模式走 `loadURL('http://localhost:5173')` 不碰这条路径，所以一直没暴露。
+
+**为什么不在 tsconfig 里改 rootDir** — 改成 `"electron"` 让 main.js 落到 `dist-electron/main.js`，路径就只 `..` 一层。但 vite.config.ts 也被 include 且依赖项目根的 node_modules/alias，改 rootDir 会破坏 vite 的解析。改 runtime 路径是更局部的修复。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。
