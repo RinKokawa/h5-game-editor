@@ -152,7 +152,7 @@
 .recentName {
   font-size: 13px;
   font-weight: 500;
-  padding-right: 24px;
+  padding-right: 60px;
 }
 
 .recentPath {
@@ -160,12 +160,21 @@
   color: var(--color-text-muted);
   font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
   word-break: break-all;
+  padding-right: 60px;
 }
 
+/*
+ * Hover-only action buttons (open / remove). The whole .recentItem
+ * also has `onClick → openPath`, so these are affordance hints — the
+ * user can still click anywhere on the item, but the buttons make the
+ * "open" / "remove" actions visually discoverable on hover.
+ *
+ * Layout: `[→ open] [× remove]`, both right-aligned, 4 px gap.
+ */
+.recentOpen,
 .recentRemove {
   position: absolute;
   top: 6px;
-  right: 6px;
   width: 22px;
   height: 22px;
   display: inline-flex;
@@ -183,14 +192,32 @@
     background 100ms;
 }
 
+.recentOpen {
+  right: 32px;
+}
+
+.recentRemove {
+  right: 6px;
+}
+
+.recentItem:hover .recentOpen,
+.recentItem:focus-within .recentOpen,
 .recentItem:hover .recentRemove,
 .recentItem:focus-within .recentRemove {
   opacity: 1;
 }
 
+.recentOpen:hover,
 .recentRemove:hover {
   background: var(--color-bg-panel);
   color: var(--color-text);
+}
+
+.recentOpen:focus-visible,
+.recentRemove:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 .recentEmpty {

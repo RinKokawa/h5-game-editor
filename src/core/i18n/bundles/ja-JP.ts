@@ -176,6 +176,7 @@ const jaJP: Bundle = {
   'launcher.confirm': '作成',
   'launcher.cancel': 'キャンセル',
   'launcher.remove': '一覧から削除',
+  'launcher.openRecent': 'このワークスペースを開く',
   'launcher.invalid': 'このフォルダーは有効なワークスペースではありません。',
   'launcher.error.generic': 'ワークスペースを開けません:{error}',
   'launcher.error.noElectron':

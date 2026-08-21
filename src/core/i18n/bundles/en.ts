@@ -166,6 +166,7 @@ const en: Bundle = {
   'launcher.confirm': 'Create',
   'launcher.cancel': 'Cancel',
   'launcher.remove': 'Remove from list',
+  'launcher.openRecent': 'Open this workspace',
   'launcher.invalid': 'This folder is no longer a valid workspace.',
   'launcher.error.generic': 'Could not open workspace: {error}',
   'launcher.error.noElectron':

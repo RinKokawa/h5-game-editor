@@ -23,6 +23,23 @@
 
 ---
 
+## Patch — Launcher recents 加显式 → 打开按钮 — 2026-08-21
+
+**做了什么** — Launcher 右侧"最近"列表的每条 item 上 hover 时多显示一个 → 按钮（与现有 × 删除按钮并列）。点击 → 触发 `openPath(entry.path, entry.name)`，行为与整块 item 点击一致；× 删除按钮保留不变。
+
+- `src/app/launcher/Launcher.tsx` 在 `.recentRemove` 之前插入 `<button class="recentOpen">`，图标是 → 箭头 SVG，`onClick` 调 `openPath` 并 `stopPropagation` 避免冒泡到外层 item 的 onClick 重复触发。
+- `src/app/launcher/Launcher.module.css` 抽 `.recentOpen` 与 `.recentRemove` 共享布局（position absolute / 22×22 / opacity 0），通过 `.recentItem:hover` + `:focus-within` 同时显形；新增 `:focus-visible` outline 让键盘用户也能看见。两个按钮分别 `right: 32px` 与 `right: 6px`，间距 4px；`.recentName` / `.recentPath` 的 `padding-right` 从 24px 调到 60px 容纳两个按钮。
+- i18n 加 `launcher.openRecent`（en: "Open this workspace" / zh-CN: "打开此工作区" / ja-JP: "このワークスペースを開く"），用于按钮的 `title` 与 `aria-label`。
+
+**为什么** — 现有 `.recentItem` 整块可点（`role="button"`，点哪都开），但视觉上没 affordance — hover 只改 border 色，用户不知道这是可点的。加显式按钮：
+- 给"打开"动作明确视觉目标（hover 时出现 → 图标，与 VS Code/常见 IDE 的列表操作一致）
+- 保留整块可点行为，**不破坏**老用户习惯
+- 屏幕阅读器和键盘用户也能识别（`aria-label` + `:focus-visible` outline）
+
+**为什么 hover 显示而不是 always** — 不抢常态视觉焦点；与现有 × 删除按钮保持一致的克制风格。如果 recents 列表未来变长或常用，可改成 always 显示，但 hover 是更"安静"的默认。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。
@@ -297,16 +314,6 @@
 - Step 13 范围不含画布 UI 移除 entity（无选区模型）。用 Undo（Ctrl+Z）回滚。选区模型落 Step 19。
 
 **为什么 Object layer / entity 数据住 `documentStore` 而不是 Pixi 场景图** — PixiJS 视图必须订阅 plain-data store。`ObjectLayerView` 读 `useDocumentStore` 并在 rAF debounce 上重建它的 Container — 一处处理顺序、可见性、和 entity 表，全从单一数据源。
-
----
-
-## Patch — docs/frontend-structure.md + scripts/generate-frontend-tree.mjs — 2026-08-21
-
-**做了什么** — 新增 `docs/frontend-structure.md`（约 250 行）：React 组件树、编辑器壳、侧栏面板层、面板清单、PixiJS 场景图、CSS module 映射、跨层通信示例、src/ 文件树快照、维护规则表。新增 `scripts/generate-frontend-tree.mjs` 扫 `src/` 输出文件树骨架，`npm run docs:tree` 触发。CLAUDE.md §13 加指针到新文档，project-docs skill 加"改前端组件必同步更新"触发表。
-
-**为什么** — 当前各叶子目录 `index.ts` 有模块级 README 注释，但**顶层 React 树 / PixiJS 场景图 / CSS 映射没有任何文档**，只能读代码判断结构。新人 onboarding、跨编辑器复用、未来 AI 助手都受益于一张"前端长啥样"的统一参考。脚本负责**结构骨架**（易漂移、扫出来就对），手写负责**意图**（边界判定原则、跨层通信、维护触发表）。
-
-**为什么是 plain `.mjs` 而非 `.ts`** — 文档维护工具不该需要编译。`.mjs` 用 Node 20+ 原生 ESM，零依赖，零编译成本，跟 lint/typecheck/build 完全解耦。
 
 ---
 

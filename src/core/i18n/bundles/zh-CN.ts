@@ -166,6 +166,7 @@ const zhCN: Bundle = {
   'launcher.confirm': '创建',
   'launcher.cancel': '取消',
   'launcher.remove': '从列表中移除',
+  'launcher.openRecent': '打开此工作区',
   'launcher.invalid': '该文件夹已不再是有效的工作区。',
   'launcher.error.generic': '无法打开工作区:{error}',
   'launcher.error.noElectron': '工作区需要 Electron 桌面版。请运行 `npm run electron:dev` 启动编辑器。',
