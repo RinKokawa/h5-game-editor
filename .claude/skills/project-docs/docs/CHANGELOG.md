@@ -94,6 +94,23 @@
 
 ---
 
+## Patch — 加应用 icon — 2026-08-21
+
+**做了什么** — 接入设计师交付的 app icon：
+- 根目录 `icon.png`（1254×1254 RGBA，1.2 MB）→ `build/icon.png`（electron-builder 母版）
+- `ffmpeg` 生成 256×256 favicon → `public/favicon.png`（浏览器 tab + Readme 头图）
+- `electron-builder.yml` 给 `win` / `linux` 加 `icon: build/icon.png`
+- `index.html` 把 `<link rel="icon" href="/vite.svg">` 换成 `./favicon.png`
+- `README.md` 头部加 `![icon](./public/favicon.png)`
+
+**为什么** — electron-builder 标准约定 `build/icon.{png,ico,icns}`。PNG 直接接，electron-builder 自动按平台转 ICO（Win 多分辨率）/ ICNS（mac）/ Linux 用 PNG。
+
+**为什么 favicon 单独一份 256×256** — 浏览器读 1254×1254 太重，256 是 retina tab 的甜点。ffmpeg 一行：`ffmpeg -i build/icon.png -vf scale=256:256 public/favicon.png`。
+
+**为什么不动 Mac icon** — 用户没给 .icns，PNG 能凑合用（electron-builder 自动转 ICNS）。Mac 用户更挑剔，真要交付 mac build 时再考虑出 .icns。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

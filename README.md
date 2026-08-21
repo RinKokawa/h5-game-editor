@@ -1,5 +1,7 @@
 # H5 Game Editor
 
+![H5 Game Editor icon](./public/favicon.png)
+
 A long-term maintainable, data-driven H5 game editor framework. Designed to
 be the host for multiple editor types (Map, Dialogue, Animation, Quest, ...)
 sharing a single core.

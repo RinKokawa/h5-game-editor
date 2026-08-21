@@ -11,6 +11,7 @@ files:
   - electron-builder.yml
 
 win:
+  icon: build/icon.png
   target:
     - target: nsis
       arch:
@@ -33,6 +34,7 @@ mac:
   category: public.app-category.developer-tools
 
 linux:
+  icon: build/icon.png
   target:
     - AppImage
   category: Development
