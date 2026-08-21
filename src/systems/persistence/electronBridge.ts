@@ -73,6 +73,19 @@ export interface H5Bridge {
 
   /** Update the OS title bar (close / maximize / minimize strip). */
   readonly setWindowTitle: (title: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+  /**
+   * Window lifecycle bridge — `onBeforeClose` / `offBeforeClose`
+   * subscribe to the main process's intercepted close gesture, and
+   * `confirmClose` lets the renderer actually tear the window down
+   * when it's done handling the gesture.
+   *
+   * Outside Electron (browser / vitest) the wrapper is a no-op: it
+   * returns a noop unsubscribe so callers don't have to branch.
+   */
+  readonly onBeforeClose: (handler: () => void) => void;
+  readonly offBeforeClose: (handler: () => void) => void;
+  readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 declare global {
@@ -190,4 +203,33 @@ export const setWindowTitle = async (
 ): Promise<{ ok: true } | { ok: false; error: string }> => {
   if (!window.h5) return { ok: true };
   return window.h5.setWindowTitle(title);
+};
+
+// --- Window lifecycle -------------------------------------------------
+
+/**
+ * Subscribe to the OS close gesture (X / Alt+F4 / Cmd+W). Returns an
+ * unsubscribe function. Outside Electron, the subscribe is a no-op
+ * and the unsubscribe is also a no-op, so callers can use the same
+ * pattern in both environments.
+ */
+export const onBeforeClose = (handler: () => void): (() => void) => {
+  const bridge = window.h5;
+  if (!bridge) return () => undefined;
+  bridge.onBeforeClose(handler);
+  return () => bridge.offBeforeClose(handler);
+};
+
+/**
+ * Confirm that the close gesture should actually tear the window
+ * down. Called by the renderer after it has finished responding to
+ * `onBeforeClose` — e.g. on the Launcher page, where there's no
+ * editor state to return to.
+ */
+export const confirmClose = async (): Promise<
+  { ok: true } | { ok: false; error: string }
+> => {
+  const bridge = window.h5;
+  if (!bridge) return { ok: false, error: 'Electron bridge not available' };
+  return bridge.confirmClose();
 };

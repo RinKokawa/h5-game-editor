@@ -88,7 +88,28 @@ export interface H5Bridge {
 
   // Window chrome (OS title bar) — see `window:setTitle` in main.ts.
   readonly setWindowTitle: (title: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+  // Window lifecycle — see `app:before-close` / `app:confirmClose` in
+  // main.ts. The OS close gesture (X button / Alt+F4 / Cmd+W) is
+  // intercepted by main; the renderer subscribes via `onBeforeClose`
+  // and decides what to do (default: flip phase back to Launcher).
+  // When the renderer actually wants to tear the window down, it
+  // calls `confirmClose`, which lets the in-flight close go through.
+  readonly onBeforeClose: (handler: () => void) => void;
+  readonly offBeforeClose: (handler: () => void) => void;
+  readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
 }
+
+// Bridge the renderer's listener set to the main process's
+// `app:before-close` channel. `ipcRenderer.on` doesn't return a
+// single subscription token we can hand back to the renderer, so we
+// keep our own Set and broadcast to it. The renderer is expected
+// to add the same handler reference via onBeforeClose and remove it
+// via offBeforeClose (typical useEffect cleanup pattern).
+const beforeCloseListeners = new Set<() => void>();
+ipcRenderer.on('app:before-close', () => {
+  for (const fn of beforeCloseListeners) fn();
+});
 
 const api: H5Bridge = {
   openDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:open'),
@@ -123,6 +144,15 @@ const api: H5Bridge = {
 
   setWindowTitle: (title: string): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('window:setTitle', title),
+
+  onBeforeClose: (handler: () => void) => {
+    beforeCloseListeners.add(handler);
+  },
+  offBeforeClose: (handler: () => void) => {
+    beforeCloseListeners.delete(handler);
+  },
+  confirmClose: (): Promise<{ ok: true } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('app:confirmClose'),
 };
 
 contextBridge.exposeInMainWorld('h5', api);

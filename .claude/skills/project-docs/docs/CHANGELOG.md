@@ -40,6 +40,24 @@
 
 ---
 
+## Patch — 关窗口回 Launcher，不退出应用 — 2026-08-21
+
+**做了什么** — 点 X（OS 关闭手势 = 标题栏 X / Alt+F4 / Cmd+W）不再退出应用；编辑器 phase 下点 X 自动回到 Launcher，Launcher phase 下点 X 才真退。Cmd+Q / Quit 菜单仍正常退出。
+
+- `electron/main.ts` 加 `isQuitting` 标志 + `mainWindow.on('close', ...)` 拦截：非 quit 状态下 `event.preventDefault()` 并 `webContents.send('app:before-close')` 通知渲染端。`app.on('before-quit', ...)` 把 `isQuitting` 置 true 让真退走正常路径。新 IPC `app:confirmClose` 让渲染端在"该真关了"时把标志置 true 再调 `mainWindow.close()`。
+- `electron/preload.ts` 给 `H5Bridge` 加 `onBeforeClose` / `offBeforeClose` / `confirmClose` 三个方法。`ipcRenderer.on` 没有返回 unsubscribe token，用模块级 `Set<() => void>` 自己广播。
+- `src/systems/persistence/electronBridge.ts` 镜像这三个方法。`onBeforeClose` 捕获 `window.h5` 到本地变量再做 narrowing（全局上的 narrowing 不能跨闭包保持）。
+- `src/app/WorkspaceGate.tsx` 在 mount 时挂 `onBeforeClose` 单 listener：拿到事件时读 `useWorkspaceStore.getState().phase` 的**当前值**（不是 React state 快照）— phase === 'editor' → 调 `leave()`；phase === 'launcher' → 调 `confirmClose()`。EditorShell 自身的 cleanup（tool teardown、log 卸载、title 复位）走原本的卸载路径。
+- 测试 mocks（recentWorkspaces / workspaceIO / documentIO 三个 `H5Bridge` mock）补上三个新方法。
+
+**为什么单一 listener 在 WorkspaceGate 而非 EditorShell / Launcher** — EditorShell 只在 editor phase 挂载，Launcher 只在 launcher phase 挂载。任何一边挂都意味着 phase 翻转时要重挂，且可能漏掉"phase 切换瞬间到达"的关闭事件。WorkspaceGate 是 phase 的真相之源，且永不卸载 — 单一 listener 永不重复。
+
+**为什么 listener 读 `getState()` 而非组件 props 闭包** — listener 是普通函数，闭包里捕获的 `phase` 是 mount 时的快照；phase 翻转后 listener 仍指向旧 phase。`getState()` 拿到当前真值，零 stale 风险。
+
+**为什么是 `event.preventDefault()` + 二次握手而非 `mainWindow.hide()`** — `hide()` 会让窗口从屏幕消失但仍占着资源；用户会以为"应用挂了"。prevent + ping 让 renderer 决定下一步，UX 上是无缝的 phase 翻转（EditorShell 卸载动画、Launcher 立即出现）。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

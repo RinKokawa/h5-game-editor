@@ -59,6 +59,14 @@ const RECENT_LIST_FILENAME = 'recent.json';
 const MAX_RECENT_ENTRIES = 10;
 
 let mainWindow: BrowserWindow | null = null;
+// Set when the user actually wants to quit (Cmd+Q / Quit menu / app
+// shutdown). When true, `BrowserWindow.close` proceeds normally. When
+// false, a close attempt is intercepted and re-routed to the renderer
+// as `app:before-close`, so the renderer can flip `phase` back to
+// `'launcher'` instead of letting the app exit. The renderer's
+// `app:confirmClose` IPC sets this back to true when it's actually OK
+// to tear the window down (e.g. we're already on the Launcher page).
+let isQuitting = false;
 
 const createWindow = (): BrowserWindow => {
   const win = new BrowserWindow({
@@ -87,6 +95,22 @@ const createWindow = (): BrowserWindow => {
 
   win.once('ready-to-show', () => {
     win.show();
+  });
+
+  // Intercept the OS "close" gesture (X button / Alt+F4 / Cmd+W) so
+  // we can route it through the renderer. The renderer's WorkspaceGate
+  // decides whether that gesture should flip back to the Launcher
+  // (default — keeps the app alive) or actually tear the window
+  // down (after the user has explicitly chosen to quit, or when the
+  // window is already on the Launcher page). `isQuitting` short-
+  // circuits this on real shutdowns so `app:confirmClose`'s
+  // `mainWindow.close()` doesn't loop.
+  win.on('close', (event) => {
+    if (isQuitting) return;
+    if (!win.webContents.isDestroyed()) {
+      event.preventDefault();
+      win.webContents.send('app:before-close');
+    }
   });
 
   if (isDev) {
@@ -459,6 +483,21 @@ const registerIpc = (): void => {
       return { ok: false as const, error: errMsg(err) };
     }
   });
+
+  // ----------------------- Window lifecycle -----------------------
+  //
+  // Renderer-driven close handshake. The renderer subscribes to
+  // `app:before-close` (sent above when the OS close gesture fires);
+  // once it has decided to actually quit (e.g. we're already on the
+  // Launcher page, or the user picked Quit from a menu) it calls
+  // `app:confirmClose`, which flips `isQuitting` so the next close
+  // attempt lands cleanly.
+  ipcMain.handle('app:confirmClose', (): { ok: true } | { ok: false; error: string } => {
+    if (!mainWindow) return { ok: false, error: 'No main window' };
+    isQuitting = true;
+    if (!mainWindow.isDestroyed()) mainWindow.close();
+    return { ok: true };
+  });
 };
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);
@@ -491,4 +530,10 @@ app
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Real shutdown signal (Cmd+Q on macOS, Quit menu, OS log-out).
+// Distinct from `BrowserWindow.close`, which we intercept above.
+app.on('before-quit', () => {
+  isQuitting = true;
 });
