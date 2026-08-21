@@ -111,6 +111,16 @@
 
 ---
 
+## Patch — 加中文 README — 2026-08-21
+
+**做了什么** — 新建 `README.zh-CN.md`（完整中文翻译，226 行）；`README.md` 顶部加一行语言切换链接 `[English] · [简体中文]`。
+
+**为什么** — GitHub 自动按浏览器/系统语言展示对应 README。两份都在仓库里：英文给国际开发者，中文给中文圈。
+
+**为什么不做一份合一的 bilingual README** — 段落交错视觉差，且 GitHub 单语自动识别失效。分开两份是约定俗成（vue / react / vite 等都这么干）。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

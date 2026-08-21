@@ -8,6 +8,8 @@ sharing a single core.
 
 > Status: **early scaffolding**. Architecture frozen; feature work in progress.
 
+**Languages:** [English](./README.md) · [简体中文](./README.zh-CN.md)
+
 ## Tech Stack
 
 | Concern       | Choice                  | Why                                        |
