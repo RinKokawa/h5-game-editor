@@ -83,7 +83,7 @@ import { useWorkspaceStore } from '@state/workspaceStore';
 import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { documentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
-import { openExternal, setWindowTitle } from '@systems/persistence/electronBridge';
+import { openExternal, setFullScreen, setWindowTitle } from '@systems/persistence/electronBridge';
 import { historyShortcuts } from '@systems/shortcut/HistoryShortcuts';
 import { ShortcutRegistry } from '@systems/shortcut/index';
 import { selectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
@@ -114,6 +114,10 @@ export function EditorShell() {
   // here so the dialog mount point stays in this file (and can
   // route through props for any future bridge-backed settings).
   const [showPreferences, setShowPreferences] = useState(false);
+  // Mirror the OS-level fullscreen state so the menu's
+  // Toggle Full Screen entry shows the right `checkMark` and the
+  // menu reflects when the user pressed F11 directly.
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<PixiRenderer | null>(null);
@@ -337,6 +341,17 @@ export function EditorShell() {
           }}
           onShowPreferences={() => {
             setShowPreferences(true);
+          }}
+          onToggleFullScreen={() => {
+            // Toggle and reflect into local state so the menu's
+            // checkmark tracks the new value immediately. The OS
+            // may also flip fullscreen via F11 / the window
+            // manager; bridging that back is out of scope for v0.1
+            // (the menu's checkmark just won't update until the
+            // user goes through the menu again).
+            const next = !isFullScreen;
+            setIsFullScreen(next);
+            void setFullScreen(next);
           }}
         />
       </div>

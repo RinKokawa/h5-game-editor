@@ -99,6 +99,15 @@ export interface H5Bridge {
   readonly openExternal: (url: string) => Promise<
     { ok: true } | { ok: false; error: string }
   >;
+
+  /**
+   * Toggle OS-level fullscreen on the editor window. Routed
+   * through the main process. Outside Electron returns
+   * `{ ok: false }` so tests don't try to toggle anything.
+   */
+  readonly setFullScreen: (enabled: boolean) => Promise<
+    { ok: true } | { ok: false; error: string }
+  >;
 }
 
 declare global {
@@ -276,4 +285,18 @@ export const openExternal = async (
   const bridge = window.h5;
   if (!bridge) return { ok: false, error: 'Electron bridge not available' };
   return bridge.openExternal(url);
+};
+
+/**
+ * Toggle OS-level fullscreen on the editor window. Outside
+ * Electron this refuses — the renderer can't make the browser
+ * window fullscreen via a hidden menu, and tests shouldn't
+ * try.
+ */
+export const setFullScreen = async (
+  enabled: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  const bridge = window.h5;
+  if (!bridge) return { ok: false, error: 'Electron bridge not available' };
+  return bridge.setFullScreen(enabled);
 };

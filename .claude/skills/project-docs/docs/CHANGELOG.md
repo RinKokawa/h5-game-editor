@@ -313,6 +313,38 @@ i18n 加 `statusbar.row.modified` / `statusbar.row.saved` / `.title` 三 bundle�
 
 ---
 
+## Patch — View 菜单填标准内容（zoom + 面板 + 全屏）— 2026-08-22
+
+**做了什么** — View 菜单从空变成有内容：
+
+```
+View
+├── Zoom In           Ctrl+=
+├── Zoom Out          Ctrl+-
+├── Actual Size       Ctrl+0
+├── Reset View        Home
+├── ─────────
+├── Toggle Console           ● (checkmark when visible)
+├── Toggle Left Panel
+├── Toggle Right Panel
+└── ─────────
+    Toggle Full Screen  F11
+```
+
+新增 `system:setFullScreen` IPC（main 用 `BrowserWindow.setFullScreen`），preload / bridge 镜像，`MenuBar` 加 `onToggleFullScreen` prop，`EditorShell` 接管 toggle 状态（`isFullScreen` mirror state 让 checkmark 跟菜单即时同步）。Window 菜单的面板 toggle 项迁到 View（按业界惯例：View = 看到什么，Window = 窗口管理器动作），Window 留空菜单项（未来 macOS "New Window" 之类）。
+
+i18n 加 9 个 `menu.view.{zoomIn,zoomOut,actualSize,resetView,toggleFullScreen,toggleConsole,toggleLeftPanel,toggleRightPanel}` 三 bundle。3 个测试 mock 加 `setFullScreen`。
+
+**为什么 View 放面板 toggle 不放 Window** — 业界惯例（VS Code / Blender / Figma）：View 管"看什么"（缩放、面板显隐、网格），Window 管窗口本身（New Window、Minimize、Close）。本项目只有单窗口，Window 暂时空。
+
+**为什么 Full Screen 用 IPC 不直接 `BrowserWindow`** — renderer 没 node integration，`setFullScreen` 是 BrowserWindow API，必须走 main。
+
+**为什么 EditorShell 镜像 isFullScreen state** — 用户也可能按 F11 / OS 快捷键触发全屏，OS 切了但 renderer 不知道。v0.1 只镜像菜单触发，不监听 OS F11 — 用户从菜单点切时 checkmark 同步，按 F11 时不同步（v0.1 简化）。后续 Electron `enter-full-screen` / `leave-full-screen` 事件可以接入。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20

@@ -44,6 +44,7 @@ const stubBridge = (impl: Partial<H5Bridge> = {}): H5Bridge => {
     confirmClose: vi.fn(() => Promise.resolve({ ok: true as const })),
     cancelClose: vi.fn(() => Promise.resolve({ ok: true as const })),
     openExternal: vi.fn(() => Promise.resolve({ ok: true as const })),
+    setFullScreen: vi.fn(() => Promise.resolve({ ok: true as const })),
   };
   return { ...defaults, ...impl };
 };

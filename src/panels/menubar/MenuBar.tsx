@@ -29,6 +29,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useT } from '@core/i18n';
 import { useLayoutStore } from '@state/layoutStore';
 import { useToolStore, type ToolId } from '@state/toolStore';
+import { useViewStore } from '@state/viewStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 
 import styles from './MenuBar.module.css';
@@ -57,6 +58,12 @@ export interface MenuBarProps {
    * `EditorShell` for the same reason as `onShowAbout`.
    */
   readonly onShowPreferences: () => void;
+  /**
+   * Toggles OS-level fullscreen on the editor window (View →
+   * Toggle Full Screen). Routed through the bridge in
+   * `EditorShell`.
+   */
+  readonly onToggleFullScreen: () => void;
 }
 
 interface MenuItem {
@@ -85,7 +92,13 @@ const TOOL_DEFS: ReadonlyArray<{ readonly id: ToolId; readonly shortcut: string 
   { id: 'collider', shortcut: 'C' },
 ];
 
-export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreferences }: MenuBarProps) {
+export function MenuBar({
+  fileActions,
+  onOpenDocs,
+  onShowAbout,
+  onShowPreferences,
+  onToggleFullScreen,
+}: MenuBarProps) {
   const t = useT();
   // EditorShell only mounts MenuBar in the editor phase, where
   // `current` is guaranteed non-null — the `t('project.untitled')`
@@ -154,7 +167,6 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreference
     onClick: a.onClick,
   }));
 
-  const languageItems: ReadonlyArray<MenuItem> = []; // moved to Edit → Preferences (Blender convention)
 
   // Edit items: data ops (visible-but-no-op stubs for now) +
   // `separator` placeholder before the `Preferences` entry, mirroring
@@ -190,29 +202,12 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreference
     checkMark: activeToolId === t.id,
   }));
 
-  // Window items toggle panel collapse state. Visible-state check
-  // (checkMark) lets the user see the current layout at a glance.
-  const windowItems: ReadonlyArray<MenuItem> = [
-    {
-      labelKey: 'menu.window.toggleConsole',
-      onClick: () => {
-        useLayoutStore.getState().toggleBottomCollapsed();
-      },
-      checkMark: !bottomCollapsed,
-    },
-    {
-      labelKey: 'menu.window.toggleLeftPanel',
-      onClick: () => {
-        useLayoutStore.getState().toggleLeftCollapsed();
-      },
-    },
-    {
-      labelKey: 'menu.window.toggleRightPanel',
-      onClick: () => {
-        useLayoutStore.getState().toggleRightCollapsed();
-      },
-    },
-  ];
+  // Window items. Panel toggles moved to View (the standard
+  // desktop convention — View holds what the user sees, Window
+  // holds the window manager's own actions). v0.1 has nothing
+  // here yet, so the menu currently renders but its dropdown
+  // stays closed (`hasItems` check).
+  const windowItems: ReadonlyArray<MenuItem> = [];
 
   // Help items. About opens the About dialog (mounted by
   // EditorShell — MenuBar only flips the open flag via
@@ -220,6 +215,46 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreference
   // EditorShell routes to `shell.openExternal` through the IPC
   // bridge. `panels/` cannot import `systems/` directly per the
   // ESLint boundary, so neither call lives in this file.
+  // View items: zoom (calls viewStore directly — `state/`
+  // is reachable from `panels/`) + panel toggles (layoutStore).
+  // separator splits "what to look at" (zoom) from "what's
+  // visible" (panels). Fullscreen lives at the bottom of the
+  // menu so it doesn't interrupt the zoom group.
+  const viewItems: ReadonlyArray<MenuItem | { readonly kind: 'separator' }> = [
+    { labelKey: 'menu.view.zoomIn', shortcut: 'Ctrl+=', onClick: () => useViewStore.getState().zoomBy(1.25) },
+    { labelKey: 'menu.view.zoomOut', shortcut: 'Ctrl+-', onClick: () => useViewStore.getState().zoomBy(0.8) },
+    { labelKey: 'menu.view.actualSize', shortcut: 'Ctrl+0', onClick: () => useViewStore.getState().setZoom(1) },
+    { labelKey: 'menu.view.resetView', shortcut: 'Home', onClick: () => useViewStore.getState().resetView() },
+    { kind: 'separator' },
+    {
+      labelKey: 'menu.view.toggleConsole',
+      onClick: () => {
+        useLayoutStore.getState().toggleBottomCollapsed();
+      },
+      checkMark: !bottomCollapsed,
+    },
+    {
+      labelKey: 'menu.view.toggleLeftPanel',
+      onClick: () => {
+        useLayoutStore.getState().toggleLeftCollapsed();
+      },
+    },
+    {
+      labelKey: 'menu.view.toggleRightPanel',
+      onClick: () => {
+        useLayoutStore.getState().toggleRightCollapsed();
+      },
+    },
+    { kind: 'separator' },
+    {
+      labelKey: 'menu.view.toggleFullScreen',
+      shortcut: 'F11',
+      onClick: () => {
+        onToggleFullScreen();
+      },
+    },
+  ];
+
   const helpItems: ReadonlyArray<MenuItem> = [
     {
       labelKey: 'menu.help.about',
@@ -235,10 +270,11 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreference
     },
   ];
 
-  const menus: ReadonlyArray<MenuDef> = [
+
+const menus: ReadonlyArray<MenuDef> = [
     { labelKey: 'menu.file', items: fileItems },
     { labelKey: 'menu.edit', items: editItems },
-    { labelKey: 'menu.view', items: languageItems },
+    { labelKey: 'menu.view', items: viewItems },
     { labelKey: 'menu.tools', items: toolsItems },
     { labelKey: 'menu.window', items: windowItems },
     { labelKey: 'menu.help', items: helpItems },

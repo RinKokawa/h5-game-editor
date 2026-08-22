@@ -573,6 +573,25 @@ const registerIpc = (): void => {
       }
     },
   );
+
+  // ----------------------- Window fullscreen -----------------------
+  //
+  // Toggles the OS-level fullscreen state of the editor window.
+  // `mainWindow.setFullScreen(true)` enters the macOS Lion-style
+  // fullscreen (separate Space) and the Windows 11 maximized view.
+  // `false)` restores the previous window state.
+  ipcMain.handle(
+    'system:setFullScreen',
+    (_event, enabled: boolean): { ok: true } | { ok: false; error: string } => {
+      if (!mainWindow) return { ok: false, error: 'No main window' };
+      try {
+        mainWindow.setFullScreen(enabled);
+        return { ok: true as const };
+      } catch (err) {
+        return { ok: false as const, error: errMsg(err) };
+      }
+    },
+  );
 };
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);

@@ -106,6 +106,11 @@ export interface H5Bridge {
   // main process only blocks the dangerous schemes that Electron
   // itself blocks.
   readonly openExternal: (url: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+  // Toggle OS-level fullscreen on the editor window. Routed
+  // through main because `BrowserWindow.setFullScreen` requires
+  // the main process.
+  readonly setFullScreen: (enabled: boolean) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 // Bridge the renderer's listener set to the main process's
@@ -164,6 +169,8 @@ const api: H5Bridge = {
   cancelClose: (): Promise<{ ok: true }> => ipcRenderer.invoke('app:cancelClose'),
   openExternal: (url: string): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('system:openExternal', url),
+  setFullScreen: (enabled: boolean): Promise<{ ok: true } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('system:setFullScreen', enabled),
 };
 
 contextBridge.exposeInMainWorld('h5', api);
