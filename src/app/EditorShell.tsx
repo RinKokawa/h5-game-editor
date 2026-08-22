@@ -39,7 +39,7 @@
  *     locale without forcing EditorShell to subscribe.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { preloadBuiltinTilesets } from '@assets';
 import { Camera } from '@canvas/camera/Camera';
@@ -64,6 +64,7 @@ import { PanelColumn } from '@layout/PanelColumn';
 import { PanelDock } from '@layout/PanelDock';
 import { PanelStack, type PanelSpec } from '@layout/PanelStack';
 import { Splitter } from '@layout/Splitter';
+import { AboutDialog } from '@panels/about/AboutDialog';
 import { AssetBrowserPanel } from '@panels/asset-browser/AssetBrowserPanel';
 import { ConsolePanel } from '@panels/console/ConsolePanel';
 import { InspectorPanel } from '@panels/inspector/InspectorPanel';
@@ -101,6 +102,13 @@ export function EditorShell() {
   const setLeftWidth = useLayoutStore((s) => s.setLeftWidth);
   const setRightWidth = useLayoutStore((s) => s.setRightWidth);
   const setBottomHeight = useLayoutStore((s) => s.setBottomHeight);
+
+  // About dialog state. Held here (the only layer that imports
+  // the bridge) and exposed to MenuBar via `onShowAbout`. Closing
+  // it goes back to null; the dialog itself short-circuits to
+  // `null` when `open` is false so it isn't in the DOM at all
+  // outside of an actual About invocation.
+  const [showAbout, setShowAbout] = useState(false);
 
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<PixiRenderer | null>(null);
@@ -319,6 +327,9 @@ export function EditorShell() {
           onOpenDocs={() => {
             void openExternal('https://github.com/RinKokawa/h5-game-editor');
           }}
+          onShowAbout={() => {
+            setShowAbout(true);
+          }}
         />
       </div>
       <div className={styles.toolbarSlot}>
@@ -365,6 +376,16 @@ export function EditorShell() {
       <div className={styles.statusBarSlot}>
         <StatusBar />
       </div>
+
+      <AboutDialog
+        open={showAbout}
+        onClose={() => {
+          setShowAbout(false);
+        }}
+        onOpenExternal={(url) => {
+          void openExternal(url);
+        }}
+      />
     </div>
   );
 }

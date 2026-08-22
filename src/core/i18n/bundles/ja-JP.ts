@@ -42,6 +42,7 @@ const jaJP: Bundle = {
   'menu.window.toggleRightPanel': '右パネル切替',
   'menu.help.about': 'バージョン情報',
   'menu.help.docs': 'ドキュメント',
+  'about.close': '閉じる',
 
   // MenuBar — File dropdown
   'menu.file.save': '保存',

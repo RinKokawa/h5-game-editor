@@ -34,6 +34,7 @@ const zhCN: Bundle = {
   'menu.window.toggleRightPanel': '切换右侧栏',
   'menu.help.about': '关于',
   'menu.help.docs': '文档',
+  'about.close': '关闭',
 
   // MenuBar — File dropdown
   'menu.file.save': '保存',

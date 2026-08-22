@@ -27,7 +27,6 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { AVAILABLE_LOCALES, NATIVE_NAMES, setLocale, useLocale, useT } from '@core/i18n';
-import { useConsoleStore } from '@state/consoleStore';
 import { useLayoutStore } from '@state/layoutStore';
 import { useToolStore, type ToolId } from '@state/toolStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
@@ -35,7 +34,6 @@ import { useWorkspaceStore } from '@state/workspaceStore';
 import styles from './MenuBar.module.css';
 
 import type { Locale } from '@core/i18n';
-import type { LogLine } from '@local-types/log';
 
 interface FileAction {
   readonly labelKey: string;
@@ -51,6 +49,11 @@ export interface MenuBarProps {
    * that `panels/` cannot have per the ESLint boundary).
    */
   readonly onOpenDocs: () => void;
+  /**
+   * Toggles the About dialog. Wired by `EditorShell` which owns
+   * the dialog's mount + state.
+   */
+  readonly onShowAbout: () => void;
 }
 
 interface MenuItem {
@@ -79,7 +82,7 @@ const TOOL_DEFS: ReadonlyArray<{ readonly id: ToolId; readonly shortcut: string 
   { id: 'collider', shortcut: 'C' },
 ];
 
-export function MenuBar({ fileActions, onOpenDocs }: MenuBarProps) {
+export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) {
   const t = useT();
   const currentLocale = useLocale();
   // EditorShell only mounts MenuBar in the editor phase, where
@@ -206,21 +209,17 @@ export function MenuBar({ fileActions, onOpenDocs }: MenuBarProps) {
     },
   ];
 
-  // Help items — placeholder hooks. About pushes a marker line to
-  // the console (visible in ConsolePanel); Documentation fires
-  // the `onOpenDocs` prop wired by EditorShell, which calls
-  // `shell.openExternal` through the IPC bridge (panels/ can't
-  // import systems/ directly per the ESLint boundary).
+  // Help items. About opens the About dialog (mounted by
+  // EditorShell — MenuBar only flips the open flag via
+  // `onShowAbout`). Documentation fires `onOpenDocs`, which
+  // EditorShell routes to `shell.openExternal` through the IPC
+  // bridge. `panels/` cannot import `systems/` directly per the
+  // ESLint boundary, so neither call lives in this file.
   const helpItems: ReadonlyArray<MenuItem> = [
     {
       labelKey: 'menu.help.about',
       onClick: () => {
-        const line: LogLine = {
-          level: 'info',
-          text: 'H5 Game Editor v0.1.0 — early scaffolding',
-          timestamp: Date.now(),
-        };
-        useConsoleStore.getState().push(line);
+        onShowAbout();
       },
     },
     {

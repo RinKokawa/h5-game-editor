@@ -35,6 +35,7 @@ const en: Bundle = {
   'menu.window.toggleRightPanel': 'Toggle Right Panel',
   'menu.help.about': 'About',
   'menu.help.docs': 'Documentation',
+  'about.close': 'Close',
 
   // MenuBar — File dropdown
   'menu.file.save': 'Save',
