@@ -6,6 +6,29 @@
   background: var(--color-bg-elevated);
   border-bottom: 1px solid var(--color-border);
   user-select: none;
+  /* Establish a stacking context for the open dropdown (z-index
+     100 inside this) and sit above the full-screen
+     `.menuBackdrop` (z-index 99) so the menu buttons stay
+     clickable while a menu is open. */
+  position: relative;
+  z-index: 100;
+}
+
+/*
+ * Invisible full-screen backdrop rendered while a menu is open.
+ * Sits between the rest of the page (canvas, panels) and the
+ * menu bar in z-stack order — z-index 99 vs. menu bar's 100. A
+ * click on the backdrop closes the menu. We use this instead of
+ * a document-level `mousedown` listener because PixiJS's canvas
+ * swallows some pointer events before they bubble to `document`,
+ * so the listener didn't fire reliably for clicks on the canvas
+ * area. The backdrop intercepts directly with no event-bubbling
+ * dependency.
+ */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
 }
 
 .left,

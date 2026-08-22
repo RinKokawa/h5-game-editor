@@ -175,6 +175,20 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — MenuBar 改用 backdrop 关闭，不用 document mousedown 监听 — 2026-08-22
+
+**做了什么** — `MenuBar.tsx` 删除 useEffect 里的 `document.addEventListener('mousedown')` 监听；保留 `keydown`（Esc）。改成 React 习惯做法：菜单开时渲染一张全屏 invisible `<div class="menuBackdrop">`，backdrop 的 `onMouseDown` 关闭菜单。
+
+z-index 分层：`.menuBackdrop` = 99、`.menuBar` 加 `position: relative; z-index: 100`、`.dropdown` = 100（在 MenuBar stacking context 内）。效果：backdrop 在画布/侧栏之上但在菜单栏之下 → 点击画布/侧栏落 backdrop → 关菜单；点击菜单按钮落 MenuBar → 走 toggle / hover 切换；点击下拉项落 dropdown → item onClick → 关。
+
+**为什么之前 document mousedown 不可靠** — PixiJS canvas 的 pointer 事件可能不冒泡到 document（`stopPropagation` / 自家 event listener 拦截），导致点画布时 document 那个监听器收不到。Backdrop 是**直接落 DOM 元素**，不依赖事件冒泡 — 点击 backdrop 一定触发 backdrop 自己的 listener。
+
+**为什么 backdrop 不是 MenuBar 的子节点** — backdrop 在 MenuBar 之外（sibling，用 fragment 包裹），让 `menuBarRef.contains(target)` 检查不会把 backdrop 当成"menuBar 内部"。backdrop 自己 onClick 无条件关闭，逻辑更直接。
+
+CHANGELOG patch + project-docs skill 镜像同步。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

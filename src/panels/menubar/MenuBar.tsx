@@ -71,27 +71,22 @@ export function MenuBar({ fileActions }: MenuBarProps) {
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const menuBarRef = useRef<HTMLElement | null>(null);
 
-  // Outside-click + Escape close. We attach listeners only while a
-  // menu is open so we don't pay for them the rest of the time
-  // (and so we don't leak handlers between mounts). `mousedown`
-  // (not `click`) catches the gesture before any menu item's
-  // `onClick` fires, so an outside tap closes first then does
-  // nothing else.
+  // Escape closes. We previously also attached a `mousedown`
+  // listener on `document` for outside-click close, but PixiJS's
+  // canvas swallows some pointer events before they bubble to
+  // document, so the listener didn't fire reliably when clicking
+  // the canvas area. The fix is to render an invisible full-screen
+  // backdrop (`.menuBackdrop`) while a menu is open — z-index
+  // layering puts it above the canvas and the side panels but
+  // below the dropdown itself, so clicks anywhere except the menu
+  // bar / dropdown items land on the backdrop and close.
   useEffect(() => {
     if (openMenuKey === null) return;
-    const handleMouseDown = (e: MouseEvent): void => {
-      const target = e.target as Node | null;
-      if (target && menuBarRef.current && !menuBarRef.current.contains(target)) {
-        setOpenMenuKey(null);
-      }
-    };
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') setOpenMenuKey(null);
     };
-    document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openMenuKey]);
@@ -147,7 +142,23 @@ export function MenuBar({ fileActions }: MenuBarProps) {
   };
 
   return (
-    <header ref={menuBarRef} className={styles.menuBar} role="menubar">
+    <>
+      {/* Full-screen backdrop while a menu is open. Renders as a
+          sibling of <header> (not inside it) so a click on the
+          backdrop is not "inside the menu bar" by `contains`
+          checks — its own onClick closes the menu unconditionally.
+          z-index: 99 keeps it under the menu bar (100) and the
+          dropdown items (101). */}
+      {openMenuKey !== null && (
+        <div
+          className={styles.menuBackdrop}
+          onMouseDown={() => {
+            setOpenMenuKey(null);
+          }}
+          aria-hidden="true"
+        />
+      )}
+      <header ref={menuBarRef} className={styles.menuBar} role="menubar">
       <div className={styles.left}>
         {menus.map((menu) => {
           const menuLabel = t(menu.labelKey);
@@ -229,5 +240,6 @@ export function MenuBar({ fileActions }: MenuBarProps) {
         v0.1.0
       </div>
     </header>
+    </>
   );
 }
