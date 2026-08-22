@@ -26,14 +26,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { AVAILABLE_LOCALES, NATIVE_NAMES, setLocale, useLocale, useT } from '@core/i18n';
+import { useT } from '@core/i18n';
 import { useLayoutStore } from '@state/layoutStore';
 import { useToolStore, type ToolId } from '@state/toolStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 
 import styles from './MenuBar.module.css';
-
-import type { Locale } from '@core/i18n';
 
 interface FileAction {
   readonly labelKey: string;
@@ -54,6 +52,11 @@ export interface MenuBarProps {
    * the dialog's mount + state.
    */
   readonly onShowAbout: () => void;
+  /**
+   * Toggles the Preferences dialog (Edit → Preferences). Wired by
+   * `EditorShell` for the same reason as `onShowAbout`.
+   */
+  readonly onShowPreferences: () => void;
 }
 
 interface MenuItem {
@@ -66,7 +69,7 @@ interface MenuItem {
 
 interface MenuDef {
   readonly labelKey: string;
-  readonly items: ReadonlyArray<MenuItem>;
+  readonly items: ReadonlyArray<MenuItem | { readonly kind: 'separator' }>;
 }
 
 // Tool shortcut table mirrors the keys the Toolbar uses. Kept in
@@ -82,9 +85,8 @@ const TOOL_DEFS: ReadonlyArray<{ readonly id: ToolId; readonly shortcut: string 
   { id: 'collider', shortcut: 'C' },
 ];
 
-export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) {
+export function MenuBar({ fileActions, onOpenDocs, onShowAbout, onShowPreferences }: MenuBarProps) {
   const t = useT();
-  const currentLocale = useLocale();
   // EditorShell only mounts MenuBar in the editor phase, where
   // `current` is guaranteed non-null — the `t('project.untitled')`
   // fallback is purely defensive (e.g. a future state where MenuBar
@@ -152,25 +154,28 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) 
     onClick: a.onClick,
   }));
 
-  const languageItems: ReadonlyArray<MenuItem> = AVAILABLE_LOCALES.map((localeId: Locale) => ({
-    label: NATIVE_NAMES[localeId],
-    onClick: () => setLocale(localeId),
-    checkMark: localeId === currentLocale,
-  }));
+  const languageItems: ReadonlyArray<MenuItem> = []; // moved to Edit → Preferences (Blender convention)
 
-  // Edit items are visible-but-no-op stubs: the keys they hint at
-  // (undo/redo/cut/copy/paste) are bound to shortcuts elsewhere,
-  // and the actual data ops aren't wired yet. Showing them in the
-  // menu makes the dropdown layout, shortcut column, and click
-  // close-after-action path all testable without faking the
-  // underlying behavior.
-  const editItems: ReadonlyArray<MenuItem> = [
+  // Edit items: data ops (visible-but-no-op stubs for now) +
+  // `separator` placeholder before the `Preferences` entry, mirroring
+  // the Blender / Photoshop / Unity layout (ops on top, app-wide
+  // settings below). The separator is rendered as a divider in the
+  // dropdown — see `<MenuItem>` renderer below.
+  type EditItem = MenuItem | { readonly kind: 'separator' };
+  const editItems: ReadonlyArray<EditItem> = [
     { labelKey: 'menu.edit.undo', shortcut: 'Ctrl+Z' },
     { labelKey: 'menu.edit.redo', shortcut: 'Ctrl+Y' },
     { labelKey: 'menu.edit.cut', shortcut: 'Ctrl+X' },
     { labelKey: 'menu.edit.copy', shortcut: 'Ctrl+C' },
     { labelKey: 'menu.edit.paste', shortcut: 'Ctrl+V' },
     { labelKey: 'menu.edit.selectAll', shortcut: 'Ctrl+A' },
+    { kind: 'separator' },
+    {
+      labelKey: 'menu.edit.preferences',
+      onClick: () => {
+        onShowPreferences();
+      },
+    },
   ];
 
   // Tools items wire to setActiveTool — same code path the
@@ -292,7 +297,21 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) 
                   style={{ display: isOpen ? 'block' : 'none' }}
                 >
                   {menu.items.map((item, idx) => {
-                    const itemKey = item.labelKey ?? item.label ?? String(idx);
+                    // Separator slots visually break a dropdown into
+                    // groups (Blender / native pattern). They carry
+                    // no action; `handleItemClick` would no-op them
+                    // anyway because they have no `onClick`.
+                    if ('kind' in item && item.kind === 'separator') {
+                      return (
+                        <div
+                          key={`separator-${idx}`}
+                          className={styles.dropdownSeparator}
+                          role="separator"
+                        />
+                      );
+                    }
+                    const realItem = item as MenuItem;
+                    const itemKey = realItem.labelKey ?? realItem.label ?? String(idx);
                     return (
                       <button
                         key={itemKey}
@@ -300,13 +319,13 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) 
                         className={styles.dropdownItem}
                         role="menuitem"
                         onClick={() => {
-                          handleItemClick(item);
+                          handleItemClick(realItem);
                         }}
                       >
                         <span>
-                          {item.checkMark !== undefined && (
+                          {realItem.checkMark !== undefined && (
                             <span className={styles.checkMark} aria-hidden="true">
-                              {item.checkMark ? (
+                              {realItem.checkMark ? (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="14"
@@ -323,10 +342,10 @@ export function MenuBar({ fileActions, onOpenDocs, onShowAbout }: MenuBarProps) 
                               ) : null}
                             </span>
                           )}
-                          {renderLabel(item)}
+                          {renderLabel(realItem)}
                         </span>
-                        {item.shortcut !== undefined && (
-                          <span className={styles.shortcut}>{item.shortcut}</span>
+                        {realItem.shortcut !== undefined && (
+                          <span className={styles.shortcut}>{realItem.shortcut}</span>
                         )}
                       </button>
                     );

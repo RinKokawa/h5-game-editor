@@ -36,6 +36,12 @@ const en: Bundle = {
   'menu.help.about': 'About',
   'menu.help.docs': 'Documentation',
   'about.close': 'Close',
+  'menu.edit.preferences': 'Preferences',
+  'preferences.title': 'Preferences',
+  'preferences.language': 'Language',
+  'preferences.languageHint': 'Choose the language for the editor interface.',
+  'preferences.appearance': 'Appearance',
+  'preferences.shortcuts': 'Keyboard shortcuts',
   'about.projectDescription':
     'A long-term maintainable, data-driven H5 game editor framework. Designed to be the host for multiple editor types (Map, Dialogue, Animation, Quest, ...) sharing a single core.',
   'about.author': 'Author',

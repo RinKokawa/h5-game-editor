@@ -71,6 +71,7 @@ import { InspectorPanel } from '@panels/inspector/InspectorPanel';
 import { LayerPanel } from '@panels/layer/LayerPanel';
 import { MenuBar } from '@panels/menubar/MenuBar';
 import { PalettePanel } from '@panels/palette/PalettePanel';
+import { PreferencesDialog } from '@panels/preferences/PreferencesDialog';
 import { PropertiesPanel } from '@panels/properties/PropertiesPanel';
 import { StatusBar } from '@panels/status-bar/StatusBar';
 import { Toolbar } from '@panels/toolbar/Toolbar';
@@ -109,6 +110,10 @@ export function EditorShell() {
   // `null` when `open` is false so it isn't in the DOM at all
   // outside of an actual About invocation.
   const [showAbout, setShowAbout] = useState(false);
+  // Preferences dialog state. Same pattern as About — state lives
+  // here so the dialog mount point stays in this file (and can
+  // route through props for any future bridge-backed settings).
+  const [showPreferences, setShowPreferences] = useState(false);
 
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<PixiRenderer | null>(null);
@@ -330,6 +335,9 @@ export function EditorShell() {
           onShowAbout={() => {
             setShowAbout(true);
           }}
+          onShowPreferences={() => {
+            setShowPreferences(true);
+          }}
         />
       </div>
       <div className={styles.toolbarSlot}>
@@ -384,6 +392,12 @@ export function EditorShell() {
         }}
         onOpenExternal={(url) => {
           void openExternal(url);
+        }}
+      />
+      <PreferencesDialog
+        open={showPreferences}
+        onClose={() => {
+          setShowPreferences(false);
         }}
       />
     </div>

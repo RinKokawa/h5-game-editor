@@ -278,6 +278,22 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — 语言切换从 View 移到 Edit → Preferences — 2026-08-22
+
+**做了什么** — 新建 `src/panels/preferences/PreferencesDialog.tsx`（modal，含语言 radio 选择 section，未来扩 Appearance / Shortcuts section）。Edit 菜单末尾加分隔符 + Preferences 项，点开 PreferencesDialog。View 菜单留空（未来塞面板显隐 / 缩放 / 主题）。`MenuItem` 联合类型加 `{ kind: 'separator' }` 支持 dropdown 内的分组分隔线。
+
+i18n 加 `menu.edit.preferences` / `preferences.title` / `preferences.language` / `preferences.languageHint`（三 bundle）。
+
+**为什么从 View 移走** — 业界惯例（Unity / Blender / Photoshop / IntelliJ）语言切换都在 Preferences / Settings 里。View 是"看什么"（panel 显隐 / 缩放 / 主题），Language 是"用什么语言看"（app-wide 行为）。两个维度不同。
+
+**为什么 Edit > Preferences 而不是顶级 Preferences 菜单** — 用户选的 Blender 风格：Edit 是数据操作（undo/redo/cut/copy/paste），Preferences 是这些之上的 app-wide 设置。Blender 习惯：Edit → Preferences。
+
+**为什么 separator 类型要 union 不用新组件** — dropdown item 渲染简单，inline 一个 `<div role="separator">` + CSS 1px 线即可；不需要新组件。`MenuItem | { kind: 'separator' }` discriminated union 渲染时 narrow。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
