@@ -208,6 +208,22 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — Help → Documentation 跳仓库 URL — 2026-08-22
+
+**做了什么** — 加 `system:openExternal` IPC + bridge + wrapper（`openExternal(url)`）。Help → Documentation 改成调 `openExternal('https://github.com/RinKokawa/h5-game-editor')`，OS 默认浏览器开。
+
+**为什么走 prop 不走直接 import** — `panels/` ESLint 边界禁 import `systems/`。MenuBar 加 `onOpenDocs` prop；`EditorShell`（能 import bridge 的层）包装 `() => openExternal(URL)` 传下去。Bridge 模式类似 fileActions 一致：panel 接收回调，不直接持有 bridge 引用。
+
+**为什么用 `shell.openExternal` 不 `window.open`** — `shell.openExternal` 是 Electron 推荐 API：走 OS 默认浏览器、不开 Electron 进程内新窗口、阻止 `javascript:` 等危险 scheme。renderer 没 node integration，只能借 main 进程的 `shell` 模块。
+
+**为什么不在 main 加 allowlist 校验 URL** — 现阶段只暴露给项目自己用，可信 URL 由 caller（EditorShell 写死常量）提供。Electron 自带的 scheme 过滤已经覆盖安全场景（`javascript:` / `data:` / `vbscript:` 等会被拦）。未来如果接受 user 输入 URL，再加正则白名单。
+
+3 个测试 mock 加 `openExternal`。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20

@@ -81,7 +81,7 @@ import { useWorkspaceStore } from '@state/workspaceStore';
 import { log, subscribeLog } from '@systems/diagnostics';
 import { loadDocument, saveDocument } from '@systems/persistence/documentIO';
 import { documentIOShortcuts } from '@systems/persistence/DocumentIOShortcuts';
-import { setWindowTitle } from '@systems/persistence/electronBridge';
+import { openExternal, setWindowTitle } from '@systems/persistence/electronBridge';
 import { historyShortcuts } from '@systems/shortcut/HistoryShortcuts';
 import { ShortcutRegistry } from '@systems/shortcut/index';
 import { selectionShortcuts } from '@systems/shortcut/SelectionShortcuts';
@@ -314,7 +314,12 @@ export function EditorShell() {
   return (
     <div className={styles.shell}>
       <div className={styles.menuBarSlot}>
-        <MenuBar fileActions={fileActions} />
+        <MenuBar
+          fileActions={fileActions}
+          onOpenDocs={() => {
+            void openExternal('https://github.com/RinKokawa/h5-game-editor');
+          }}
+        />
       </div>
       <div className={styles.toolbarSlot}>
         <Toolbar />

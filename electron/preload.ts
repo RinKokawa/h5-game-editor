@@ -99,6 +99,13 @@ export interface H5Bridge {
   readonly offBeforeClose: (handler: () => void) => void;
   readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
   readonly cancelClose: () => Promise<{ ok: true }>;
+
+  // Open a URL in the OS default browser. Routed through main
+  // process's `shell.openExternal` (renderer has no node
+  // integration). Caller is responsible for any allowlist — the
+  // main process only blocks the dangerous schemes that Electron
+  // itself blocks.
+  readonly openExternal: (url: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 // Bridge the renderer's listener set to the main process's
@@ -155,6 +162,8 @@ const api: H5Bridge = {
   confirmClose: (): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('app:confirmClose'),
   cancelClose: (): Promise<{ ok: true }> => ipcRenderer.invoke('app:cancelClose'),
+  openExternal: (url: string): Promise<{ ok: true } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('system:openExternal', url),
 };
 
 contextBridge.exposeInMainWorld('h5', api);

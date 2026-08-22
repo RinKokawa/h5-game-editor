@@ -45,6 +45,12 @@ interface FileAction {
 
 export interface MenuBarProps {
   readonly fileActions: ReadonlyArray<FileAction>;
+  /**
+   * Opens the project's GitHub repository in the OS default
+   * browser. Wired by `EditorShell` (which has the bridge access
+   * that `panels/` cannot have per the ESLint boundary).
+   */
+  readonly onOpenDocs: () => void;
 }
 
 interface MenuItem {
@@ -73,7 +79,7 @@ const TOOL_DEFS: ReadonlyArray<{ readonly id: ToolId; readonly shortcut: string 
   { id: 'collider', shortcut: 'C' },
 ];
 
-export function MenuBar({ fileActions }: MenuBarProps) {
+export function MenuBar({ fileActions, onOpenDocs }: MenuBarProps) {
   const t = useT();
   const currentLocale = useLocale();
   // EditorShell only mounts MenuBar in the editor phase, where
@@ -200,13 +206,11 @@ export function MenuBar({ fileActions }: MenuBarProps) {
     },
   ];
 
-  // Help items are placeholder hooks — the underlying actions
-  // (about dialog, docs link) don't exist yet. They push a
-  // marker line into the console store so the click path can be
-  // verified (and the user sees the line appear in ConsolePanel
-  // at the bottom of the editor). `panels/` cannot import from
-  // `systems/`, so we go through `state/consoleStore` instead
-  // of `@systems/diagnostics`.
+  // Help items — placeholder hooks. About pushes a marker line to
+  // the console (visible in ConsolePanel); Documentation fires
+  // the `onOpenDocs` prop wired by EditorShell, which calls
+  // `shell.openExternal` through the IPC bridge (panels/ can't
+  // import systems/ directly per the ESLint boundary).
   const helpItems: ReadonlyArray<MenuItem> = [
     {
       labelKey: 'menu.help.about',
@@ -222,12 +226,7 @@ export function MenuBar({ fileActions }: MenuBarProps) {
     {
       labelKey: 'menu.help.docs',
       onClick: () => {
-        const line: LogLine = {
-          level: 'info',
-          text: 'See CLAUDE.md / docs/ in the project root',
-          timestamp: Date.now(),
-        };
-        useConsoleStore.getState().push(line);
+        onOpenDocs();
       },
     },
   ];

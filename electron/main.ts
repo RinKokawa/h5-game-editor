@@ -34,7 +34,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 
 const isDev = !app.isPackaged;
 const RENDERER_DEV_URL = 'http://localhost:5173';
@@ -553,6 +553,26 @@ const registerIpc = (): void => {
     }
     return { ok: true };
   });
+
+  // ----------------------- Open URL in OS browser -----------------------
+  //
+  // Delegates to `shell.openExternal`, which the renderer cannot
+  // reach directly (no nodeIntegration). `shell.openExternal` blocks
+  // dangerous schemes (`javascript:`, etc.) per Electron's policy,
+  // so the renderer doesn't need its own allowlist — but callers
+  // should still pass user-controlled URLs through a validator
+  // before this IPC runs in any v1.x+.
+  ipcMain.handle(
+    'system:openExternal',
+    async (_event, url: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+      try {
+        await shell.openExternal(url);
+        return { ok: true as const };
+      } catch (err) {
+        return { ok: false as const, error: errMsg(err) };
+      }
+    },
+  );
 };
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10);

@@ -87,6 +87,18 @@ export interface H5Bridge {
   readonly offBeforeClose: (handler: () => void) => void;
   readonly confirmClose: () => Promise<{ ok: true } | { ok: false; error: string }>;
   readonly cancelClose: () => Promise<{ ok: true }>;
+
+  /**
+   * Open a URL in the OS default browser. Routed through the
+   * main process's `shell.openExternal`. The main process does
+   * not enforce an allowlist; callers should pass a trusted URL.
+   * Outside Electron (browser / vitest) the wrapper falls back to
+   * `{ ok: false }` rather than `window.open` so we don't pop an
+   * unexpected tab during tests.
+   */
+  readonly openExternal: (url: string) => Promise<
+    { ok: true } | { ok: false; error: string }
+  >;
 }
 
 declare global {
@@ -249,4 +261,19 @@ export const cancelClose = async (): Promise<{ ok: true }> => {
   const bridge = window.h5;
   if (!bridge) return { ok: true };
   return bridge.cancelClose();
+};
+
+// --- Open URL ---------------------------------------------------------
+
+/**
+ * Open a URL in the OS default browser. Outside Electron we
+ * refuse (`{ ok: false }`) instead of falling through to
+ * `window.open`, which would pop a tab the tests don't want.
+ */
+export const openExternal = async (
+  url: string,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  const bridge = window.h5;
+  if (!bridge) return { ok: false, error: 'Electron bridge not available' };
+  return bridge.openExternal(url);
 };
