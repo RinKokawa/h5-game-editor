@@ -161,6 +161,20 @@ dev 路径解析：`__dirname` = `dist-electron/electron/`，`'..', '..'` 回到
 
 ---
 
+## Patch — MenuBar 开着的菜单之间 hover 切换 — 2026-08-22
+
+**做了什么** — `MenuBar.tsx` 加 `handleMouseEnter`：menu button 的 `onMouseEnter` 触发时，如果当前**已经有**菜单开着（`openMenuKey !== null`），把 open 状态切换到这个 button 的 key。空状态（没菜单开）下 hover 不触发 open。
+
+**为什么** — 上一步把 hover 自动开干掉了，这是对的（触控板太激进），但 native 桌面菜单的混合 UX 是：点击开第一个，之后鼠标移到其他顶级项**切换**菜单（不用再点一次）。macOS / Windows 都这个范式。把这一步全砍了变成"每个顶级项都得点击"，比 hover 自动开还烦。
+
+**为什么 `prev !== null && prev !== key` 而不是单纯 setState** — 条件同时防止两种越权：
+- 没菜单开时，hover 不触发（保 click-to-open 保证）
+- hover 自己（已在自己的菜单上）时，不重 setState 同一个 key（避免无意义 re-render，也避免 race condition：hover 触发时如果 useEffect 监听刚摘掉，可能产生状态不一致）
+
+CHANGELOG patch + project-docs skill 镜像同步。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

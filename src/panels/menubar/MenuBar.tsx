@@ -100,6 +100,20 @@ export function MenuBar({ fileActions }: MenuBarProps) {
     setOpenMenuKey((prev) => (prev === key ? null : key));
   };
 
+  // Hybrid click-to-open + hover-to-switch: opening a menu is a
+  // deliberate gesture (click) so we don't pop dropdowns when the
+  // cursor merely passes over the bar. But once a menu IS open,
+  // moving the cursor to a sibling top-level item should switch
+  // to that menu without a second click — that's the native
+  // macOS / Windows pattern and it's the difference between a
+  // menu bar that feels responsive and one that feels like every
+  // click is a separate decision. We only react to `mouseenter`
+  // while a menu is already open, so the click-to-open guarantee
+  // from the bug fix above is preserved.
+  const handleMouseEnter = (key: string): void => {
+    setOpenMenuKey((prev) => (prev !== null && prev !== key ? key : prev));
+  };
+
   const handleItemClick = (item: MenuItem): void => {
     if (item.onClick) item.onClick();
     setOpenMenuKey(null);
@@ -149,6 +163,9 @@ export function MenuBar({ fileActions }: MenuBarProps) {
                 aria-expanded={hasItems ? isOpen : undefined}
                 onClick={() => {
                   if (hasItems) toggleMenu(menu.labelKey);
+                }}
+                onMouseEnter={() => {
+                  if (hasItems) handleMouseEnter(menu.labelKey);
                 }}
               >
                 {menuLabel}
