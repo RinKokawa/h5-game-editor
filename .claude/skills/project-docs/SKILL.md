@@ -135,9 +135,11 @@ type: project
 | 加新 PixiJS 子系统 | §3 |
 | 加新 CSS module | §4 |
 | 任何 src/ 文件变动 | 重跑 `npm run docs:tree`，比对 §6 是否漂移 |
+| 加 / 改 / 删快捷键 | `docs/USER_GUIDE.md`（中英文两份）的 §2 快捷键表 |
+| 加 / 改 / 删菜单项 | `docs/USER_GUIDE.md`（中英文两份）的 §2 菜单表 + §1.3（如果改了 Launcher 行为） |
 
 文档与代码漂移是技术债。改前端组件前先看文档，确认你即将做的事没破坏
-文档承诺的层级关系；改完检查是否需要补文档。
+文档承诺的层级关系；改完检查是否需要补文档。USER_GUIDE 是**面向最终用户**的，不要把开发者 / AI 看的 CLAUDE.md / frontend-structure 内容混进去。
 
 ## 常用查询（AI 助手用）
 

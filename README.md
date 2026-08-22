@@ -10,6 +10,9 @@ sharing a single core.
 
 **Languages:** [English](./README.md) · [简体中文](./README.zh-CN.md)
 
+**Using the editor?** See the [User Guide](./docs/USER_GUIDE.md) for install,
+launch, panels, and keyboard shortcuts.
+
 ## Tech Stack
 
 | Concern       | Choice                  | Why                                        |

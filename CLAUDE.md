@@ -162,6 +162,9 @@ React 面板重渲染                   帧
 前端结构层级（React 组件树、PixiJS 场景图、CSS module 映射、维护规则）见
 [`docs/frontend-structure.md`](./docs/frontend-structure.md)。改组件前先看。
 
+使用者文档（面向用户：快速开始 + 快捷键表）见
+[`docs/USER_GUIDE.md`](./docs/USER_GUIDE.md)（[中文](./docs/USER_GUIDE.zh-CN.md)）。
+
 ## 14. 常见陷阱
 
 - ❌ 把 tile 数据放 Zustand。→ 放 Document。

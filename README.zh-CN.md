@@ -8,6 +8,8 @@
 
 [English](./README.md) | **简体中文**
 
+**使用编辑器？** 看 [使用说明](./docs/USER_GUIDE.zh-CN.md) — 安装、启动、面板、快捷键。[English](./docs/USER_GUIDE.md)
+
 ## 技术栈
 
 | 关注点 | 选型 | 理由 |

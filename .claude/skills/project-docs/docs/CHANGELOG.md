@@ -264,6 +264,22 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — 加 USER_GUIDE 中英双语 — 2026-08-22
+
+**做了什么** — 新建 `docs/USER_GUIDE.md`（英文，约 170 行）+ `docs/USER_GUIDE.zh-CN.md`（中文，约 170 行）。两章：§1 Quick Start（安装、启动、创建 / 打开工作区、界面布局、第一张地图）+ §2 Keyboard Shortcuts（工具 / 文件 / 历史 / 选区 / 窗口 / 菜单 / 语言）。
+
+`CLAUDE.md` §13 加一行指针；`README.md` / `README.zh-CN.md` 加"Using the editor? See the User Guide" 链接；project-docs skill 维护触发表加两行（加 / 改 / 删快捷键 / 菜单项）。
+
+**为什么 docs/ 不放根目录** — `docs/` 已经装 `frontend-structure.md`，集中起来；根目录 `README.md` / `CLAUDE.md` / `CHANGELOG.md` 是"项目级"档，USER_GUIDE 是"用户级"档，分目录区分。
+
+**为什么不写更多章节（界面详解 / 进阶）** — 用户先选了"只快速开始 + 快捷键表"，其它章节等真出现"用户卡这里"的反馈再补。YAGNI：提前写不会被读的章节是文档技术债。
+
+**为什么双语** — 跟 README 一致：GitHub 自动按 locale 展示对应版本，URL 互通。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
