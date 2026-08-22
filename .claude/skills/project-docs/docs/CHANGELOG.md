@@ -189,6 +189,27 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — Edit / Tools / Window / Help 菜单填测试内容 — 2026-08-22
+
+**做了什么** — 之前 Edit / Tools / Window / Help 四个菜单的 `items: []` 是空，下拉不开。这次给每个菜单加最少一个（实际给多个）测试项：
+
+- **Edit**: Undo / Redo / Cut / Copy / Paste / Select All（stub — 只是显示+快捷键列，点击 no-op）
+- **Tools**: Select / Pan / Brush / Eraser / Rect / Entity / Collider（真实 wired — `setActiveTool` 接 `toolStore`，checkmark 跟当前 active 工具联动）
+- **Window**: Toggle Console / Toggle Left Panel / Toggle Right Panel（真实 wired — 调 `layoutStore.toggleXxxCollapsed`；Console 项有 checkmark 表示可见）
+- **Help**: About / Documentation（stub — 调 `useConsoleStore.push` 在 ConsolePanel 里打一条 info 日志）
+
+**i18n** — 三 bundle（en/zh-CN/ja-JP）加 22 个 `menu.{edit,tools,window,help}.*` key，全中文日对应。
+
+**为什么 Tools 走 `toolStore` 而不是 Tools 直接 dispatch 命令** — `setActiveTool` 已是 Toolbar 按钮、快捷键、Tool 内部都在用的统一入口，菜单走同一条路径不会有"两个真相源"。checkmark 也靠同一个 store 自动同步。
+
+**为什么 Help 用 consoleStore.push 而不是 `@systems/diagnostics` 的 `log`** — `panels/` ESLint 边界禁 import `systems/`（参见 `eslint.config.js` 里的 no-restricted-paths）。`state/consoleStore` 是 panels 能 import 的合法路径，且数据最终被 EditorShell 同步到 diagnostics 流（参见 consoleStore.ts 头注）。日志仍能在 ConsolePanel 看见。
+
+**为什么 Edit 是 no-op** — Edit 的实际操作（undo/redo/cut/copy/paste）需要接 HistoryStack / 系统剪贴板，目前是独立模块，不在这个菜单改的范围。先把可见的菜单 UI（label、快捷键列、checkmark 后 close-after-action 链路）测出来是用户当前的需求。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

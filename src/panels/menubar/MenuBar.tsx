@@ -27,11 +27,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { AVAILABLE_LOCALES, NATIVE_NAMES, setLocale, useLocale, useT } from '@core/i18n';
+import { useConsoleStore } from '@state/consoleStore';
+import { useLayoutStore } from '@state/layoutStore';
+import { useToolStore, type ToolId } from '@state/toolStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
 
 import styles from './MenuBar.module.css';
 
 import type { Locale } from '@core/i18n';
+import type { LogLine } from '@local-types/log';
 
 interface FileAction {
   readonly labelKey: string;
@@ -56,6 +60,19 @@ interface MenuDef {
   readonly items: ReadonlyArray<MenuItem>;
 }
 
+// Tool shortcut table mirrors the keys the Toolbar uses. Kept in
+// MenuBar (not imported) so the menu stays self-contained and the
+// Toolbar can be deleted or renamed without touching this file.
+const TOOL_DEFS: ReadonlyArray<{ readonly id: ToolId; readonly shortcut: string }> = [
+  { id: 'select', shortcut: 'V' },
+  { id: 'pan', shortcut: 'H' },
+  { id: 'brush', shortcut: 'B' },
+  { id: 'eraser', shortcut: 'E' },
+  { id: 'rect', shortcut: 'R' },
+  { id: 'entity', shortcut: 'O' },
+  { id: 'collider', shortcut: 'C' },
+];
+
 export function MenuBar({ fileActions }: MenuBarProps) {
   const t = useT();
   const currentLocale = useLocale();
@@ -64,6 +81,12 @@ export function MenuBar({ fileActions }: MenuBarProps) {
   // fallback is purely defensive (e.g. a future state where MenuBar
   // mounts during a transition).
   const projectName = useWorkspaceStore((s) => s.current?.name) ?? t('project.untitled');
+
+  // Subscribe so the Tools / Window checkmarks re-render when
+  // state changes (e.g. picking a tool via Toolbar shortcut should
+  // move the checkmark in the menu).
+  const activeToolId = useToolStore((s) => s.activeToolId);
+  const bottomCollapsed = useLayoutStore((s) => s.bottomCollapsed);
 
   // Which dropdown is currently open, or `null` if none. Single-
   // open at a time matches native menu bars — opening File
@@ -126,13 +149,96 @@ export function MenuBar({ fileActions }: MenuBarProps) {
     checkMark: localeId === currentLocale,
   }));
 
+  // Edit items are visible-but-no-op stubs: the keys they hint at
+  // (undo/redo/cut/copy/paste) are bound to shortcuts elsewhere,
+  // and the actual data ops aren't wired yet. Showing them in the
+  // menu makes the dropdown layout, shortcut column, and click
+  // close-after-action path all testable without faking the
+  // underlying behavior.
+  const editItems: ReadonlyArray<MenuItem> = [
+    { labelKey: 'menu.edit.undo', shortcut: 'Ctrl+Z' },
+    { labelKey: 'menu.edit.redo', shortcut: 'Ctrl+Y' },
+    { labelKey: 'menu.edit.cut', shortcut: 'Ctrl+X' },
+    { labelKey: 'menu.edit.copy', shortcut: 'Ctrl+C' },
+    { labelKey: 'menu.edit.paste', shortcut: 'Ctrl+V' },
+    { labelKey: 'menu.edit.selectAll', shortcut: 'Ctrl+A' },
+  ];
+
+  // Tools items wire to setActiveTool — same code path the
+  // shortcuts and Toolbar buttons use. Checkmark tracks the active
+  // tool so picking via menu reflects in Toolbar and vice versa.
+  const toolsItems: ReadonlyArray<MenuItem> = TOOL_DEFS.map((t) => ({
+    labelKey: `menu.tools.${t.id}`,
+    shortcut: t.shortcut,
+    onClick: () => {
+      useToolStore.getState().setActiveTool(t.id);
+    },
+    checkMark: activeToolId === t.id,
+  }));
+
+  // Window items toggle panel collapse state. Visible-state check
+  // (checkMark) lets the user see the current layout at a glance.
+  const windowItems: ReadonlyArray<MenuItem> = [
+    {
+      labelKey: 'menu.window.toggleConsole',
+      onClick: () => {
+        useLayoutStore.getState().toggleBottomCollapsed();
+      },
+      checkMark: !bottomCollapsed,
+    },
+    {
+      labelKey: 'menu.window.toggleLeftPanel',
+      onClick: () => {
+        useLayoutStore.getState().toggleLeftCollapsed();
+      },
+    },
+    {
+      labelKey: 'menu.window.toggleRightPanel',
+      onClick: () => {
+        useLayoutStore.getState().toggleRightCollapsed();
+      },
+    },
+  ];
+
+  // Help items are placeholder hooks — the underlying actions
+  // (about dialog, docs link) don't exist yet. They push a
+  // marker line into the console store so the click path can be
+  // verified (and the user sees the line appear in ConsolePanel
+  // at the bottom of the editor). `panels/` cannot import from
+  // `systems/`, so we go through `state/consoleStore` instead
+  // of `@systems/diagnostics`.
+  const helpItems: ReadonlyArray<MenuItem> = [
+    {
+      labelKey: 'menu.help.about',
+      onClick: () => {
+        const line: LogLine = {
+          level: 'info',
+          text: 'H5 Game Editor v0.1.0 — early scaffolding',
+          timestamp: Date.now(),
+        };
+        useConsoleStore.getState().push(line);
+      },
+    },
+    {
+      labelKey: 'menu.help.docs',
+      onClick: () => {
+        const line: LogLine = {
+          level: 'info',
+          text: 'See CLAUDE.md / docs/ in the project root',
+          timestamp: Date.now(),
+        };
+        useConsoleStore.getState().push(line);
+      },
+    },
+  ];
+
   const menus: ReadonlyArray<MenuDef> = [
     { labelKey: 'menu.file', items: fileItems },
-    { labelKey: 'menu.edit', items: [] },
+    { labelKey: 'menu.edit', items: editItems },
     { labelKey: 'menu.view', items: languageItems },
-    { labelKey: 'menu.tools', items: [] },
-    { labelKey: 'menu.window', items: [] },
-    { labelKey: 'menu.help', items: [] },
+    { labelKey: 'menu.tools', items: toolsItems },
+    { labelKey: 'menu.window', items: windowItems },
+    { labelKey: 'menu.help', items: helpItems },
   ];
 
   const renderLabel = (item: MenuItem): string => {
