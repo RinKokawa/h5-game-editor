@@ -36,8 +36,8 @@ export interface AboutDialogProps {
 
 const REPO_URL = 'https://github.com/RinKokawa/h5-game-editor';
 const APP_VERSION = '0.1.0';
-const COPYRIGHT = '© 2026';
-const LICENSE = 'All rights reserved';
+const AUTHOR = '泠泠子川';
+const LICENSE = 'Apache 2.0';
 
 export function AboutDialog({ open, onClose, onOpenExternal }: AboutDialogProps) {
   const t = useT();
@@ -85,14 +85,18 @@ export function AboutDialog({ open, onClose, onOpenExternal }: AboutDialogProps)
         <div className={styles.content}>
           <div className={styles.versionRow}>
             <span className={styles.version}>v{APP_VERSION}</span>
-            <span className={styles.status}>Early scaffolding</span>
           </div>
+          <p className={styles.description}>{t('about.projectDescription')}</p>
 
           <hr className={styles.divider} />
 
           <dl className={styles.fields}>
             <div className={styles.field}>
-              <dt className={styles.label}>Repository</dt>
+              <dt className={styles.label}>{t('about.author')}</dt>
+              <dd className={styles.value}>{AUTHOR}</dd>
+            </div>
+            <div className={styles.field}>
+              <dt className={styles.label}>{t('about.repository')}</dt>
               <dd>
                 <button
                   type="button"
@@ -106,11 +110,7 @@ export function AboutDialog({ open, onClose, onOpenExternal }: AboutDialogProps)
               </dd>
             </div>
             <div className={styles.field}>
-              <dt className={styles.label}>Copyright</dt>
-              <dd className={styles.value}>{COPYRIGHT}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt className={styles.label}>License</dt>
+              <dt className={styles.label}>{t('about.license')}</dt>
               <dd className={styles.value}>{LICENSE}</dd>
             </div>
           </dl>
@@ -118,7 +118,7 @@ export function AboutDialog({ open, onClose, onOpenExternal }: AboutDialogProps)
           <hr className={styles.divider} />
 
           <div className={styles.builtWith}>
-            <div className={styles.label}>Built with</div>
+            <div className={styles.label}>{t('about.builtWith')}</div>
             <div className={styles.builtList}>
               React 19 · PixiJS 8 · Zustand 5 · Vite 6 · TypeScript 5.6
             </div>

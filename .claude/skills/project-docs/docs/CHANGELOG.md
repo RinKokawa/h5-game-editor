@@ -245,6 +245,27 @@ CHANGELOG patch + project-docs skill 镜像同步。
 
 ---
 
+## Patch — About 弹窗填真值（author / description / license）— 2026-08-22
+
+**做了什么** — AboutDialog 字段改成真值：
+
+- `AUTHOR = '泠泠子川'`（用户真名）
+- 描述：`t('about.projectDescription')` — i18n 三 bundle（en/zh-CN/ja-JP）加 key，en/zh-CN 内容是 README.md / README.zh-CN.md 第一句
+- `LICENSE = 'Apache 2.0'`（用户指定）
+- Repository 链接保留（项目信息，不是个人联系方式）
+- 删了之前自己加的 `Early scaffolding` 状态行（没依据）、`Copyright © 2026`（License 已涵盖）
+- 三 bundle 加 5 个 `about.*` key（projectDescription / author / repository / license / builtWith），让标签也跟着 locale 切换
+
+**为什么 description 走 i18n 而不是 hardcoded** — About 整体是英文 UI 但描述文字各 locale 应该用对应语言版本。zh-CN 弹窗显示中文描述更自然。
+
+**为什么 repository 不算"联系方式"** — GitHub 仓库链接是项目本身的信息（去哪里看源码），不是联系作者的方式。用户的"联系方式已够"我理解为"不另外加邮箱/网站/社交媒体"，但 Repository 字段是项目 metadata 不是 contact info，保留。
+
+**为什么 Copyright 删除** — Apache 2.0 License 已经隐含版权声明（"Copyright © [year] [owner]"，无显式 owner 信息时归作者），保留一条重复的 © 2026 既冗余又 owner 不明（用户真名 ≠ git 提交者名字）。
+
+---
+
+## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20

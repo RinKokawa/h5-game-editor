@@ -36,6 +36,12 @@ const en: Bundle = {
   'menu.help.about': 'About',
   'menu.help.docs': 'Documentation',
   'about.close': 'Close',
+  'about.projectDescription':
+    'A long-term maintainable, data-driven H5 game editor framework. Designed to be the host for multiple editor types (Map, Dialogue, Animation, Quest, ...) sharing a single core.',
+  'about.author': 'Author',
+  'about.repository': 'Repository',
+  'about.license': 'License',
+  'about.builtWith': 'Built with',
 
   // MenuBar — File dropdown
   'menu.file.save': 'Save',

@@ -35,6 +35,12 @@ const zhCN: Bundle = {
   'menu.help.about': '关于',
   'menu.help.docs': '文档',
   'about.close': '关闭',
+  'about.projectDescription':
+    '一个长期可维护、数据驱动的 H5 游戏编辑器框架。设计为承载多种编辑器类型（地图、对话、动画、任务、…）共享同一套核心。',
+  'about.author': '作者',
+  'about.repository': '仓库',
+  'about.license': '许可证',
+  'about.builtWith': '基于',
 
   // MenuBar — File dropdown
   'menu.file.save': '保存',

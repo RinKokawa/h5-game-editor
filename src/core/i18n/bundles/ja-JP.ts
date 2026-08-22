@@ -43,6 +43,12 @@ const jaJP: Bundle = {
   'menu.help.about': 'バージョン情報',
   'menu.help.docs': 'ドキュメント',
   'about.close': '閉じる',
+  'about.projectDescription':
+    'A long-term maintainable, data-driven H5 game editor framework. Designed to be the host for multiple editor types (Map, Dialogue, Animation, Quest, ...) sharing a single core.',
+  'about.author': '作者',
+  'about.repository': 'リポジトリ',
+  'about.license': 'ライセンス',
+  'about.builtWith': '使用技術',
 
   // MenuBar — File dropdown
   'menu.file.save': '保存',
