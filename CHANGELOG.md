@@ -133,6 +133,18 @@ dev 路径解析：`__dirname` = `dist-electron/electron/`，`'..', '..'` 回到
 
 ---
 
+## Patch — MenuBar 圆角去掉 + 文字双轴居中 — 2026-08-22
+
+**做了什么** — `src/panels/menubar/MenuBar.module.css`：
+- `.menuButton` 去掉 `border-radius: 2px`（hover 时的圆角描边更扁平方正），改用 `display: flex; align-items: center; justify-content: center` 双轴居中文字，去掉 `padding: 4px 10px` 改 `padding: 0 10px`（垂直 padding 不需要了，flex 已经居中），加 `white-space: nowrap` 防文字被换行
+- `.dropdown` 去掉 `border-radius: 3px` 顺手保持一致
+
+**为什么** — menuBar 容器本身没设 border-radius，看起来"圆角"的是菜单按钮和下拉面板。VS Code 风调性偏好直角矩形；hover 时按钮圆角描边和 32px 高菜单条对比也违和。文字居中 — 之前按钮内文字左对齐，hover 时按钮变宽（border 出现），文字看起来左偏。
+
+**为什么 padding 0 10px 而不是 padding 4px 10px** — flex 的 `align-items: center` 已经处理垂直方向，再加垂直 padding 会双重叠加导致文字看似略偏。简化后只用水平 padding。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

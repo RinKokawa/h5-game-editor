@@ -40,14 +40,22 @@
 }
 
 .menuButton {
-  padding: 4px 10px;
+  /* Flex centers the label both ways — vertical via align-items,
+     horizontal via justify-content. The plain `padding` (no
+     `border-radius`) keeps the row visually flush against the
+     menubar's 32 px strip. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 24px;
+  padding: 0 10px;
   font-size: 12px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: 0;
   color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .menuButton:hover {
@@ -72,7 +80,7 @@
   min-width: 180px;
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
-  border-radius: 3px;
+  border-radius: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   padding: 4px 0;
   z-index: 100;
