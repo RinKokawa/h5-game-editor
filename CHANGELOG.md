@@ -145,6 +145,22 @@ dev 路径解析：`__dirname` = `dist-electron/electron/`，`'..', '..'` 回到
 
 ---
 
+## Patch — MenuBar 改点击展开，去掉 hover 自动开 — 2026-08-22
+
+**做了什么** — `MenuBar.tsx` 加 `openMenuKey` state + `menuBarRef`，点击 menu button toggle（开 / 关）。菜单可见性从 CSS `:hover` / `:focus-within` 改成 React state 控制的 `style={{ display }}`。`useEffect` 在 open 时挂 document 级 `mousedown`（点外面关）+ `keydown`（Esc 关），close 时摘。点 menu item 触发后自动 close。按钮 open 时加 `menuButtonActive` 类给视觉反馈（背景+边框），加 `aria-haspopup` / `aria-expanded` 给屏幕阅读器。
+
+**为什么** — hover 自动展开在触控板上太激进（指针扫过就触发），且鼠标扫过菜单栏时容易意外弹出。Native 桌面菜单（macOS、Windows、Linux DE）的标准 UX 是 click-to-open。
+
+**为什么 `mousedown` 不是 `click`** — mousedown 在 click 之前触发，确保"点外面"的关菜单先于任何目标元素的事件（不会先触发画布点击才关菜单）。点 menu item 时 mousedown 在 menuBarRef 内，contains() 真，不走关闭分支；click 才触发 item onClick。
+
+**为什么 useEffect 条件挂载** — 只在 open 时挂监听，平时不付开销，也避免多 menuBar 实例的 handler 泄漏。
+
+**为什么单开（toggle 替换而非叠加）** — native 桌面菜单单开；点开 File 自动关 View。多个同时开视觉拥挤且键鼠交互也会乱。
+
+**为什么 MenuBar.module.css 注释保留 `:hover` / `:focus-within`** — 用一段注释说明它们"故意"不在 CSS 里（被 React state 取代），避免未来 contributor 加回来。
+
+---
+
 ## Step 30 — Builtin tilesets (Sprout Lands) + 真实贴图 — 2026-08-20
 
 分三个批准过的子 step（30a assets/registry、30b texture pipeline、30c brush/palette UI）。地图编辑器现在画真实像素艺术地形，不再是染色 placeholder。

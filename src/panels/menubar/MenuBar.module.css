@@ -63,14 +63,27 @@
   border-color: var(--color-border);
 }
 
+/* Visual feedback when a menu is open — keeps the button
+   distinguishable from a plain hover state. */
+.menuButtonActive,
+.menuButtonActive:hover {
+  background: var(--color-bg-panel);
+  border-color: var(--color-border);
+}
+
 .menuGroup {
   position: relative;
 }
 
-.menuGroup:hover .dropdown,
-.menuGroup:focus-within .dropdown {
-  display: block;
-}
+/*
+ * Dropdown visibility is driven by React state (MenuBar.tsx
+ * toggles `openMenuKey` on click) rather than a `:hover` /
+ * `:focus-within` rule. Hover-to-open is too eager on touchpads
+ * and surprising when the cursor merely passes over the bar.
+ *
+ * Click-to-open + click-outside/Escape close is the native desktop
+ * menu pattern.
+ */
 
 .dropdown {
   display: none;

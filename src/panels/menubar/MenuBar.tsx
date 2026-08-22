@@ -17,7 +17,14 @@
  * The language switcher uses a literal `label` (the language's own
  * native name) instead of a bundle key — the convention is to
  * always show language names in their native script.
+ *
+ * Dropdown UX: click-to-open (not hover), click-outside / Escape to
+ * close, single menu open at a time. Native desktop menus follow
+ * the same pattern; hover-to-open is too eager on a touchpad and
+ * surprises users who mouse past the bar.
  */
+
+import { useEffect, useRef, useState } from 'react';
 
 import { AVAILABLE_LOCALES, NATIVE_NAMES, setLocale, useLocale, useT } from '@core/i18n';
 import { useWorkspaceStore } from '@state/workspaceStore';
@@ -58,6 +65,46 @@ export function MenuBar({ fileActions }: MenuBarProps) {
   // mounts during a transition).
   const projectName = useWorkspaceStore((s) => s.current?.name) ?? t('project.untitled');
 
+  // Which dropdown is currently open, or `null` if none. Single-
+  // open at a time matches native menu bars — opening File
+  // automatically closes View if it was up.
+  const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
+  const menuBarRef = useRef<HTMLElement | null>(null);
+
+  // Outside-click + Escape close. We attach listeners only while a
+  // menu is open so we don't pay for them the rest of the time
+  // (and so we don't leak handlers between mounts). `mousedown`
+  // (not `click`) catches the gesture before any menu item's
+  // `onClick` fires, so an outside tap closes first then does
+  // nothing else.
+  useEffect(() => {
+    if (openMenuKey === null) return;
+    const handleMouseDown = (e: MouseEvent): void => {
+      const target = e.target as Node | null;
+      if (target && menuBarRef.current && !menuBarRef.current.contains(target)) {
+        setOpenMenuKey(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpenMenuKey(null);
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openMenuKey]);
+
+  const toggleMenu = (key: string): void => {
+    setOpenMenuKey((prev) => (prev === key ? null : key));
+  };
+
+  const handleItemClick = (item: MenuItem): void => {
+    if (item.onClick) item.onClick();
+    setOpenMenuKey(null);
+  };
+
   const fileItems: ReadonlyArray<MenuItem> = fileActions.map((a) => ({
     labelKey: a.labelKey,
     shortcut: a.shortcut,
@@ -86,18 +133,32 @@ export function MenuBar({ fileActions }: MenuBarProps) {
   };
 
   return (
-    <header className={styles.menuBar} role="menubar">
+    <header ref={menuBarRef} className={styles.menuBar} role="menubar">
       <div className={styles.left}>
         {menus.map((menu) => {
           const menuLabel = t(menu.labelKey);
           const hasItems = menu.items.length > 0;
+          const isOpen = openMenuKey === menu.labelKey;
           return (
             <div key={menu.labelKey} className={styles.menuGroup}>
-              <button type="button" className={styles.menuButton} role="menuitem">
+              <button
+                type="button"
+                className={isOpen ? `${styles.menuButton} ${styles.menuButtonActive}` : styles.menuButton}
+                role="menuitem"
+                aria-haspopup={hasItems ? 'menu' : undefined}
+                aria-expanded={hasItems ? isOpen : undefined}
+                onClick={() => {
+                  if (hasItems) toggleMenu(menu.labelKey);
+                }}
+              >
                 {menuLabel}
               </button>
               {hasItems && (
-                <div className={styles.dropdown} role="menu">
+                <div
+                  className={styles.dropdown}
+                  role="menu"
+                  style={{ display: isOpen ? 'block' : 'none' }}
+                >
                   {menu.items.map((item, idx) => {
                     const itemKey = item.labelKey ?? item.label ?? String(idx);
                     return (
@@ -106,7 +167,9 @@ export function MenuBar({ fileActions }: MenuBarProps) {
                         type="button"
                         className={styles.dropdownItem}
                         role="menuitem"
-                        onClick={item.onClick}
+                        onClick={() => {
+                          handleItemClick(item);
+                        }}
                       >
                         <span>
                           {item.checkMark !== undefined && (
