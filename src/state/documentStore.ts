@@ -18,6 +18,7 @@
 
 import { create } from 'zustand';
 
+import { serializeDocument } from '@core/serialization';
 import { asColliderId, asEntityId, asLayerId, asTileId, asTilesetId } from '@editor/map/schema/ids';
 import { encodeTileCoord } from '@editor/map/schema/tile';
 
@@ -113,6 +114,21 @@ export interface DocumentState {
   /** Collider table — collision shapes placed on Collision layers. */
   readonly colliders: ReadonlyMap<ColliderId, Collider>;
 
+  /**
+   * Serialized JSON of the last successful Save (or Load). Compared
+   * against the current serialized state to compute the dirty
+   * indicator shown in the StatusBar. `null` while the document has
+   * never been saved — `useDocumentDirty` treats `null` as "no
+   * baseline yet, don't show Modified" so a freshly opened workspace
+   * doesn't flash "Modified" before any edits.
+   *
+   * Save calls `markClean` with the JSON it just wrote; Load calls
+   * `markClean` after `applyLoaded` so the new in-memory state is
+   * the new baseline.
+   */
+  readonly savedSnapshot: string | null;
+  readonly markClean: (snapshot: string) => void;
+
   // ── view-only setters (not Commands) ──────────────────────────────────
   // `setActiveLayer` is selection / focus only; it does not mutate
   // document content. tileSize / mapSize are document data and must
@@ -161,6 +177,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   activeLayerId: INITIAL_ACTIVE,
   entities: new Map<EntityId, Entity>(),
   colliders: new Map<ColliderId, Collider>(),
+  savedSnapshot: null,
+  markClean: (snapshot) => set({ savedSnapshot: snapshot }),
 
   setMeta: (meta) => set({ meta }),
 
@@ -385,5 +403,34 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       activeLayerId: INITIAL_ACTIVE,
       entities: new Map<EntityId, Entity>(),
       colliders: new Map<ColliderId, Collider>(),
+      // Drop the saved baseline too — a reset doc is a fresh doc
+      // with no committed baseline (the caller will Load a
+      // different workspace next, or Save a new one).
+      savedSnapshot: null,
     }),
 }));
+
+/**
+ * `true` when the in-memory document has diverged from the last
+ * successful Save (or Load). Comparison is JSON-string equality of
+ * `serializeDocument(state)` vs the saved snapshot — both sides
+ * go through the same serializer, so no field can drift.
+ *
+ * For v0.1 small documents the JSON.stringify on every selector
+ * call is cheap; if doc size grows we can replace with a
+ * subscriber + cached boolean.
+ */
+export const useDocumentDirty = (): boolean => {
+  return useDocumentStore((s) => {
+    if (s.savedSnapshot === null) return false;
+    const current = JSON.stringify(
+      serializeDocument({
+        meta: s.meta,
+        layers: s.layers,
+        entities: s.entities,
+        colliders: s.colliders,
+      }),
+    );
+    return current !== s.savedSnapshot;
+  });
+};

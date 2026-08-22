@@ -66,6 +66,13 @@ export const saveDocument = async (): Promise<SaveOutcome> => {
     const targetPath = `${ws.current.path}/documents/${ws.activeDocId}.json`;
     const result = await writeDocumentInWorkspace(ws.current.path, ws.activeDocId, json);
     if (!result.ok) return { ok: false, error: result.error };
+    // Update the dirty baseline so the StatusBar indicator flips
+    // back to "Saved". Uses the compact form (no indent) — JSON
+    // formatting differs from disk but field set is identical,
+    // and `useDocumentDirty` compares against the same compact
+    // form, so whitespace never falsely reports dirty.
+    const compactJson = JSON.stringify(serialized);
+    state.markClean(compactJson);
     return { ok: true, bytes: result.bytes, path: targetPath };
   } catch (err) {
     return { ok: false, error: errMsg(err) };
@@ -98,6 +105,18 @@ export const loadDocument = async (): Promise<LoadOutcome> => {
     }
     const loaded: LoadedDocument = deserializeDocument(parsed);
     applyLoaded(loaded);
+    // Mark clean against the freshly-loaded state so the StatusBar
+    // shows "Saved" instead of "Modified" right after Load.
+    const state = useDocumentStore.getState();
+    const compactJson = JSON.stringify(
+      serializeDocument({
+        meta: state.meta,
+        layers: state.layers,
+        entities: state.entities,
+        colliders: state.colliders,
+      }),
+    );
+    state.markClean(compactJson);
     const targetPath = `${ws.current.path}/documents/${ws.activeDocId}.json`;
     return { ok: true, layerCount: loaded.layers.length, path: targetPath };
   } catch (err) {

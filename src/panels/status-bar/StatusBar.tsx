@@ -1,13 +1,14 @@
 /**
  * StatusBar — bottom strip showing transient editor info.
  *
- * Subscribes to viewStore (camera + cursor) and documentStore (tile
- * size, for the tile-coord readout). Each field uses an individual
- * selector so React only re-renders the changed span.
+ * Subscribes to viewStore (camera + cursor), documentStore (tile
+ * size, for the tile-coord readout), and `useDocumentDirty` (save
+ * status). Each field uses an individual selector so React only
+ * re-renders the changed span.
  */
 
 import { useT } from '@core/i18n';
-import { useDocumentStore } from '@state/documentStore';
+import { useDocumentDirty, useDocumentStore } from '@state/documentStore';
 import { useHistoryStore } from '@state/historyStore';
 import { useSelectionStore } from '@state/selectionStore';
 import { useToolStore } from '@state/toolStore';
@@ -39,6 +40,7 @@ export function StatusBar() {
   const tileSize = useDocumentStore((s) => s.meta.tileSize);
   const mapSize = useDocumentStore((s) => s.meta.mapSize);
   const activeToolId = useToolStore((s) => s.activeToolId);
+  const dirty = useDocumentDirty();
 
   const screen = cursorScreen ? `${fmt(cursorScreen.x)}, ${fmt(cursorScreen.y)}` : '—, —';
   const world = cursorWorld ? `${fmt(cursorWorld.x)}, ${fmt(cursorWorld.y)}` : '—, —';
@@ -127,8 +129,16 @@ export function StatusBar() {
       <span className={styles.separator} aria-hidden="true">
         |
       </span>
-      <span className={styles.item} data-kind="ok">
-        {t('statusbar.row.ready')}
+      <span
+        className={styles.item}
+        data-kind={dirty ? 'warn' : 'ok'}
+        title={
+          dirty
+            ? t('statusbar.row.modified.title')
+            : t('statusbar.row.saved.title')
+        }
+      >
+        {dirty ? `● ${t('statusbar.row.modified')}` : `○ ${t('statusbar.row.saved')}`}
       </span>
     </footer>
   );
