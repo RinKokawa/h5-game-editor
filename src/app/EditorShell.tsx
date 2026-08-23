@@ -49,6 +49,9 @@ import { ObjectLayerView } from '@canvas/object-layer/ObjectLayerView';
 import { PixiRenderer } from '@canvas/renderer/PixiRenderer';
 import { SelectionOverlay } from '@canvas/selection/SelectionOverlay';
 import { TileLayerView } from '@canvas/tile-layer/TileLayerView';
+import { assetService } from '@core/asset/assetServiceSingleton';
+import { loadManifest } from '@core/asset/index';
+import { registerBuiltinAssets } from '@core/asset/registerBuiltinAssets';
 import { t as ti18n, useT } from '@core/i18n';
 import {
   BrushTool,
@@ -67,6 +70,7 @@ import { Splitter } from '@layout/Splitter';
 import { AboutDialog } from '@panels/about/AboutDialog';
 import { AssetBrowserPanel } from '@panels/asset-browser/AssetBrowserPanel';
 import { ConsolePanel } from '@panels/console/ConsolePanel';
+import { FloatingPanelsLayer } from '@app/FloatingPanelsLayer';
 import { InspectorPanel } from '@panels/inspector/InspectorPanel';
 import { LayerPanel } from '@panels/layer/LayerPanel';
 import { MenuBar } from '@panels/menubar/MenuBar';
@@ -75,6 +79,7 @@ import { PreferencesDialog } from '@panels/preferences/PreferencesDialog';
 import { PropertiesPanel } from '@panels/properties/PropertiesPanel';
 import { StatusBar } from '@panels/status-bar/StatusBar';
 import { Toolbar } from '@panels/toolbar/Toolbar';
+import { useAssetStore } from '@state/assetStore';
 import { useConsoleStore } from '@state/consoleStore';
 import { useDocumentStore } from '@state/documentStore';
 import { installHistorySubscriber, uninstallHistorySubscriber } from '@state/historyStore';
@@ -134,6 +139,35 @@ export function EditorShell() {
   const colliderToolRef = useRef<ColliderTool | null>(null);
   const panToolRef = useRef<PanTool | null>(null);
   const selectToolRef = useRef<SelectTool | null>(null);
+
+  // Register built-in assets (Sprout Lands tilesets) once at boot.
+  // `registerBuiltinAssets` is idempotent — re-mounting under
+  // StrictMode or after a workspace round-trip is a no-op for
+  // already-registered ids.
+  useEffect(() => {
+    registerBuiltinAssets(assetService);
+  }, []);
+
+  // Load the workspace's asset manifest whenever the active
+  // workspace changes. Cleanup resets the store so the next workspace
+  // starts from a clean state.
+  const workspacePath = useWorkspaceStore((s) => s.current?.path ?? null);
+  useEffect(() => {
+    if (!workspacePath) return;
+    let cancelled = false;
+    void loadManifest(workspacePath).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        useAssetStore.getState().setManifest(result.manifest);
+      } else {
+        log.error(`Failed to load asset manifest: ${result.error}`);
+      }
+    });
+    return () => {
+      cancelled = true;
+      useAssetStore.getState().reset();
+    };
+  }, [workspacePath]);
 
   useEffect(() => {
     installHistorySubscriber();
@@ -415,6 +449,11 @@ export function EditorShell() {
           setShowPreferences(false);
         }}
       />
+
+      {/* Step 30-B: floating panels layer — renders every panel whose
+          `panelDockState` isn't 'docked' as an absolutely-positioned
+          window above the grid. */}
+      <FloatingPanelsLayer />
     </div>
   );
 }

@@ -14,3 +14,4 @@ export { generatePrefixedId, generateId } from './ids';
 export { debounce, throttle } from './timing';
 export { deepFreeze } from './deepFreeze';
 export { isEditableTarget } from './dom';
+export { moveItem } from './list';

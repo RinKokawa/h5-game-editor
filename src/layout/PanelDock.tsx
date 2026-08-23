@@ -39,6 +39,13 @@ export interface PanelDockProps {
   /** Where the dragged dock would land if dropped on this header. */
   readonly headerDropHint?: 'above' | 'below' | null;
   readonly headerDragging?: boolean;
+  /**
+   * Step 30-B. When provided, the dock renders a "detach" button in
+   * the header actions slot that flips the panel to floating state.
+   * PanelStack passes this only for panels whose current state is
+   * 'docked'.
+   */
+  readonly onDetach?: () => void;
 }
 
 export function PanelDock({
@@ -57,6 +64,7 @@ export function PanelDock({
   onHeaderDragEnd,
   headerDropHint = null,
   headerDragging = false,
+  onDetach,
 }: PanelDockProps) {
   const [openState, setOpenState] = useState(defaultOpen);
   const isControlled = collapsed !== undefined;
@@ -114,7 +122,22 @@ export function PanelDock({
           </span>
           <span className={styles.title}>{title}</span>
         </button>
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {(actions || onDetach) && (
+          <div className={styles.actions}>
+            {actions}
+            {onDetach && (
+              <button
+                type="button"
+                className={styles.detachButton}
+                aria-label={`Detach ${title} panel`}
+                title="Detach as floating window"
+                onClick={onDetach}
+              >
+                ⇗
+              </button>
+            )}
+          </div>
+        )}
       </header>
       {open && (
         <div className={styles.body} id={bodyId}>

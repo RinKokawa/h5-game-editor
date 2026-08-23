@@ -15,6 +15,7 @@ const zhCN: Bundle = {
   'menu.view': '视图',
   'menu.tools': '工具',
   'menu.window': '窗口',
+  'menu.window.saveLayout': '保存当前布局为…',
   'menu.help': '帮助',
   'menu.edit.undo': '撤销',
   'menu.edit.redo': '重做',

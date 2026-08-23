@@ -16,6 +16,7 @@ const en: Bundle = {
   'menu.view': 'View',
   'menu.tools': 'Tools',
   'menu.window': 'Window',
+  'menu.window.saveLayout': 'Save Current Layout as…',
   'menu.help': 'Help',
   'menu.edit.undo': 'Undo',
   'menu.edit.redo': 'Redo',

@@ -23,6 +23,7 @@ const jaJP: Bundle = {
   'menu.view': '表示',
   'menu.tools': 'ツール',
   'menu.window': 'ウィンドウ',
+  'menu.window.saveLayout': '現在のレイアウトを名前を付けて保存…',
   'menu.help': 'ヘルプ',
   'menu.edit.undo': '元に戻す',
   'menu.edit.redo': 'やり直し',

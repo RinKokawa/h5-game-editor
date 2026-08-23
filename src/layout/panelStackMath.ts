@@ -21,6 +21,7 @@
  */
 
 import { MAX_PANEL_BODY, MIN_PANEL_BODY } from '@state/layoutStore';
+import { moveItem } from '@utils/index';
 
 import type { PanelId } from '@state/layoutStore';
 
@@ -39,17 +40,9 @@ export interface StackGeometry {
   readonly fillHeight: number;
 }
 
-/** Reorder `list` by moving the item at `from` to `to`; returns a copy. */
-export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
-  const copy = [...list];
-  if (from === to || from < 0 || to < 0 || from >= copy.length || to >= copy.length) {
-    return copy;
-  }
-  const [removed] = copy.splice(from, 1);
-  if (removed === undefined) return copy;
-  copy.splice(to, 0, removed);
-  return copy;
-}
+// `moveItem` is re-exported for callers that already import it from
+// here; the canonical implementation now lives in `@utils/list`.
+export { moveItem };
 
 /**
  * Resolve the geometry of a stack: which dock fills the remaining column

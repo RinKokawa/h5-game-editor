@@ -59,24 +59,33 @@ interface DropHint {
  * The persisted order may reference panels that no longer exist (or miss
  * newly registered ones): keep known ids in their stored order, append
  * the rest, so a stale localStorage entry can never break the stack.
+ * Hidden panels (per Window menu) are kept in the order so their
+ * position is preserved when re-shown — only the rendering loop and
+ * geometry calculation skip them.
  */
 function normalizeOrder(
   order: readonly PanelId[],
   panels: readonly PanelSpec[],
+  hidden: Readonly<Record<PanelId, boolean>>,
 ): PanelId[] {
   const specIds = panels.map((p) => p.id);
   const known = order.filter((id) => specIds.includes(id));
   const missing = specIds.filter((id) => !known.includes(id));
-  return [...known, ...missing];
+  const all = [...known, ...missing];
+  return all.filter((id) => !(hidden[id] ?? false));
 }
 
 export function PanelStack({ side, panels }: PanelStackProps) {
   const order = useLayoutStore((s) => (side === 'left' ? s.leftPanelOrder : s.rightPanelOrder));
   const heights = useLayoutStore((s) => s.panelHeights);
   const collapsedMap = useLayoutStore((s) => s.panelCollapsed);
+  const dockStateMap = useLayoutStore((s) => s.panelDockState);
+  const hiddenMap = useLayoutStore((s) => s.panelHidden);
   const setPanelOrder = useLayoutStore((s) => s.setPanelOrder);
   const setPanelHeight = useLayoutStore((s) => s.setPanelHeight);
   const togglePanelCollapsed = useLayoutStore((s) => s.togglePanelCollapsed);
+  const setPanelDockState = useLayoutStore((s) => s.setPanelDockState);
+  const movePanelToSide = useLayoutStore((s) => s.movePanelToSide);
 
   const stackRef = useRef<HTMLDivElement | null>(null);
   // Mirror of `available` readable from event handlers without stale closures.
@@ -86,7 +95,7 @@ export function PanelStack({ side, panels }: PanelStackProps) {
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
 
   const specById = new Map(panels.map((p) => [p.id, p] as const));
-  const ordered = normalizeOrder(order, panels);
+  const ordered = normalizeOrder(order, panels, hiddenMap);
   const geometry = computeStackGeometry(ordered, heights, collapsedMap, available);
 
   useEffect(() => {
@@ -117,6 +126,7 @@ export function PanelStack({ side, panels }: PanelStackProps) {
     const orderNow = normalizeOrder(
       side === 'left' ? s.leftPanelOrder : s.rightPanelOrder,
       panels,
+      s.panelHidden,
     );
     const geometryNow = computeStackGeometry(
       orderNow,
@@ -134,6 +144,12 @@ export function PanelStack({ side, panels }: PanelStackProps) {
 
   const handleDragStart = (id: PanelId) => (event: DragEvent<HTMLElement>): void => {
     event.dataTransfer.effectAllowed = 'move';
+    // Encode the source column alongside the panel id so the drop
+    // target can detect cross-column moves and call movePanelToSide.
+    event.dataTransfer.setData('application/x-panel-id', id);
+    event.dataTransfer.setData('application/x-panel-source', side);
+    // `text/plain` keeps the payload legible to non-React tooling
+    // (devtools, e2e tests) — it's a no-op for our handlers.
     event.dataTransfer.setData('text/plain', id);
     setDraggingId(id);
   };
@@ -154,12 +170,37 @@ export function PanelStack({ side, panels }: PanelStackProps) {
 
   const handleDrop = (targetId: PanelId) => (event: DragEvent<HTMLElement>): void => {
     event.preventDefault();
-    const draggedSpec = panels.find((p) => p.id === event.dataTransfer.getData('text/plain'));
+    const draggedId = event.dataTransfer.getData('application/x-panel-id');
+    const sourceSide = event.dataTransfer.getData('application/x-panel-source');
+    if (!draggedId || (sourceSide !== 'left' && sourceSide !== 'right')) {
+      clearDrag();
+      return;
+    }
+    const draggedSpec = panels.find((p) => p.id === draggedId);
     if (!draggedSpec || draggedSpec.id === targetId) {
       clearDrag();
       return;
     }
-    const from = ordered.indexOf(draggedSpec.id);
+
+    // Step 30-B: cross-column drag — source side !== current stack's
+    // side. Use movePanelToSide so both orders are updated.
+    if (sourceSide !== side) {
+      const targetIndex = ordered.indexOf(targetId);
+      if (targetIndex < 0) {
+        clearDrag();
+        return;
+      }
+      const insertAt =
+        dropHint !== null && dropHint.targetId === targetId && dropHint.position === 'below'
+          ? targetIndex + 1
+          : targetIndex;
+      movePanelToSide(draggedId, sourceSide, side, insertAt);
+      clearDrag();
+      return;
+    }
+
+    // Same-column reorder.
+    const from = ordered.indexOf(draggedId);
     const targetIndex = ordered.indexOf(targetId);
     if (from < 0 || targetIndex < 0) {
       clearDrag();
@@ -195,6 +236,10 @@ export function PanelStack({ side, panels }: PanelStackProps) {
     }
     const spec = specById.get(id);
     if (!spec) continue;
+    // Step 30-B: skip rendering if the panel is currently floating
+    // or minimized — FloatingPanel renders it from the layer above.
+    const dockState = dockStateMap[id] ?? 'docked';
+    if (dockState !== 'docked') continue;
     const isCollapsed = collapsedMap[id] ?? false;
     const isFill = !isCollapsed && geometry.fillId === id;
     nodes.push(
@@ -212,6 +257,7 @@ export function PanelStack({ side, panels }: PanelStackProps) {
         onHeaderDragOver={handleDragOver(id)}
         onHeaderDrop={handleDrop(id)}
         onHeaderDragEnd={clearDrag}
+        onDetach={() => setPanelDockState(id, 'floating')}
       >
         {spec.render()}
       </PanelDock>,

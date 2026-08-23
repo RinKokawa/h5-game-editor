@@ -27,7 +27,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useT } from '@core/i18n';
-import { useLayoutStore } from '@state/layoutStore';
+import { useLayoutStore, type PanelId } from '@state/layoutStore';
 import { useToolStore, type ToolId } from '@state/toolStore';
 import { useViewStore } from '@state/viewStore';
 import { useWorkspaceStore } from '@state/workspaceStore';
@@ -202,12 +202,81 @@ export function MenuBar({
     checkMark: activeToolId === t.id,
   }));
 
-  // Window items. Panel toggles moved to View (the standard
-  // desktop convention — View holds what the user sees, Window
-  // holds the window manager's own actions). v0.1 has nothing
-  // here yet, so the menu currently renders but its dropdown
-  // stays closed (`hasItems` check).
-  const windowItems: ReadonlyArray<MenuItem> = [];
+  // Window items. Step 30-B: each dockable panel gets a checkbox
+  // toggle (checkMark = currently visible). Click flips the
+  // hidden flag in layoutStore; PanelStack and FloatingPanelsLayer
+  // both filter on it. Hidden panels preserve their `panelDockState`
+  // and `floatingPosition`, so re-showing via the menu restores
+  // the previous layout.
+  //
+  // Step 30-B Phase 2B: workspace presets. Save current layout
+  // as… uses `window.prompt()` to ask for a name (works in
+  // Electron's renderer since contextIsolation lets standard
+  // dialog APIs through). Apply / Delete items are derived from
+  // the `presets` map — one Apply and one Delete per saved name.
+  const panelHidden = useLayoutStore((s) => s.panelHidden);
+  const presets = useLayoutStore((s) => s.presets);
+  const WINDOW_PANEL_ORDER: ReadonlyArray<PanelId> = [
+    'palette',
+    'assets',
+    'layers',
+    'inspector',
+    'properties',
+    'console',
+  ];
+
+  type WindowItem = MenuItem | { readonly kind: 'separator' };
+
+  const toggleItems: ReadonlyArray<WindowItem> = WINDOW_PANEL_ORDER.map((id) => ({
+    labelKey: `dock.${id}`,
+    onClick: () => {
+      useLayoutStore.getState().togglePanelHidden(id);
+    },
+    checkMark: !(panelHidden[id] ?? false),
+  }));
+
+  const presetNames = Object.keys(presets).sort();
+  const presetItems: ReadonlyArray<WindowItem> = presetNames.flatMap((name) => [
+    {
+      label: `Apply: ${name}`,
+      onClick: () => {
+        useLayoutStore.getState().applyPreset(name);
+      },
+    },
+    {
+      label: `Delete: ${name}`,
+      onClick: () => {
+        const confirmed = window.confirm(`Delete layout preset "${name}"?`);
+        if (confirmed) useLayoutStore.getState().deletePreset(name);
+      },
+    },
+  ]);
+
+  const saveItem: WindowItem = {
+    labelKey: 'menu.window.saveLayout',
+    onClick: () => {
+      // prompt() is available in Electron's renderer process even
+      // with contextIsolation — the call blocks the renderer thread
+      // until the user responds. Adequate for v0.1; a custom modal
+      // can replace it later without changing the action shape.
+      const name = window.prompt('Save current layout as…');
+      if (name === null) return;
+      const trimmed = name.trim();
+      if (trimmed.length === 0) return;
+      useLayoutStore.getState().savePreset(trimmed);
+    },
+  };
+
+  const windowItems: ReadonlyArray<WindowItem> =
+    presetItems.length > 0
+      ? [
+            ...toggleItems,
+            { kind: 'separator' },
+            saveItem,
+            { kind: 'separator' },
+            ...presetItems,
+          ]
+      : [...toggleItems, { kind: 'separator' }, saveItem];
 
   // Help items. About opens the About dialog (mounted by
   // EditorShell — MenuBar only flips the open flag via
