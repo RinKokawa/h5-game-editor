@@ -3,7 +3,8 @@
 > **改动任何源码前先读本文件。** 它承载了用数周谈判出来的架构决策。
 > 违反它们会以"数月后才暴露"的方式破坏项目，不是分钟级那种。
 >
-> 历史决策与已完成的 step 详见 [`CHANGELOG.md`](./CHANGELOG.md)。
+> 历史决策与已完成的 step 详见
+> [`.claude/skills/project-docs/docs/changelog/`](./.claude/skills/project-docs/docs/changelog/README.md)。
 
 ---
 
@@ -156,8 +157,14 @@ React 面板重渲染                   帧
 
 ## 13. 当前 step
 
-最新完成 + 历史 step 列表见 [`CHANGELOG.md`](./CHANGELOG.md)。
+最新完成 + 历史 step 列表见
+[`.claude/skills/project-docs/docs/changelog/`](./.claude/skills/project-docs/docs/changelog/README.md)。
 加新 step 前先读最后几节，确保衔接顺。
+
+按"时间目录 + 模块文件"两层拆：月份目录（`2026-07/`、`2026-08/`、...）下按模块
+（`document` / `renderer` / `workspace` / `electron` / `menubar` / `dialogs` /
+`layout` / `statusbar` / `extensions` / `shortcuts` / `testing` / `documentation`）
+分文件。具体模块归属和写作格式见 `.claude/skills/project-docs/SKILL.md`。
 
 前端结构层级（React 组件树、PixiJS 场景图、CSS module 映射、维护规则）见
 [`docs/frontend-structure.md`](./docs/frontend-structure.md)。改组件前先看。

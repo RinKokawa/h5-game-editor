@@ -1,7 +1,8 @@
 # 前端结构层级
 
 > 这份文档描述项目**前端**的层级关系：React 组件树、PixiJS 场景图、CSS module 映射。
-> 当前生效规则在 [`CLAUDE.md`](../CLAUDE.md)；架构演进史在 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 当前生效规则在 [`CLAUDE.md`](../CLAUDE.md)；架构演进史在
+> [`.claude/skills/project-docs/docs/changelog/`](../.claude/skills/project-docs/docs/changelog/README.md)。
 
 ---
 
@@ -236,4 +237,4 @@ src/
 
 - 把意图说明 / 跨层关系写在 §6（脚本生成的章节会盖掉它）。
 - 把架构规则写在这里 — 那住 CLAUDE.md。
-- 把 step 历史写在这里 — 那住 CHANGELOG.md。
+- 把 step 历史写在这里 — 那住 `.claude/skills/project-docs/docs/changelog/`。
