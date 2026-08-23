@@ -30,7 +30,8 @@
  *     cannot read or write arbitrary paths directly.
  */
 
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -144,6 +145,12 @@ const createWindow = (): BrowserWindow => {
 
   if (isDev) {
     void win.loadURL(RENDERER_DEV_URL);
+    // Auto-open DevTools whenever the dev server is loading the renderer
+    // (i.e. `npm run electron:dev`). Production builds never hit this
+    // branch. Detached so the user gets a console + Elements / Network
+    // panels without remembering the shortcut. The DevTools window is
+    // automatically closed with the main window.
+    win.webContents.openDevTools({ mode: 'detach' });
   } else {
     // Packaged: __dirname is `<app.asar>/dist-electron/electron/`. The
     // Vite-built renderer lives at `<app.asar>/dist/index.html`, so
@@ -241,6 +248,114 @@ const registerIpc = (): void => {
     if (result.canceled || result.filePath.length === 0) return null;
     return result.filePath;
   });
+
+  // -------------------- Asset import (Step 30-A) ----------------------
+
+  /**
+   * Show an open-file dialog with optional MIME filters (default =
+   * image / font / json). Returns the absolute path the user picked,
+   * or `null` on cancel. Used by ImportAssetDialog to pick the
+   * source file before it copies it into the workspace.
+   */
+  ipcMain.handle(
+    'dialog:pickFile',
+    async (
+      _event,
+      filters?: ReadonlyArray<{ readonly name: string; readonly extensions: ReadonlyArray<string> }>,
+    ): Promise<string | null> => {
+      if (!mainWindow) return null;
+      const dialogFilters = (filters ?? []).map((f) => ({
+        name: f.name,
+        extensions: [...f.extensions],
+      }));
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Import asset',
+        properties: ['openFile'],
+        filters: dialogFilters.length > 0 ? dialogFilters : undefined,
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+      return result.filePaths[0] ?? null;
+    },
+  );
+
+  /**
+   * Copy `sourcePath` into `<workspace>/assets/<semanticKind>/<targetName>`,
+   * compute its sha-256 hash + byte size, and return the entry
+   * metadata. Refuses to overwrite an existing file (returns
+   * `{ ok: false, error }`) so the renderer can prompt for a new
+   * name. The id returned is the workspace-relative path the
+   * renderer's AssetService uses as the canonical AssetId.
+   */
+  ipcMain.handle(
+    'asset:importFile',
+    async (
+      _event,
+      workspacePath: string,
+      sourcePath: string,
+      semanticKind: string,
+      targetName: string,
+    ): Promise<
+      | {
+          readonly ok: true;
+          readonly entry: {
+            readonly id: string;
+            readonly path: string;
+            readonly hash: string;
+            readonly size: number;
+          };
+        }
+      | { readonly ok: false; readonly error: string }
+    > => {
+      try {
+        if (
+          typeof workspacePath !== 'string' ||
+          workspacePath.length === 0 ||
+          typeof sourcePath !== 'string' ||
+          sourcePath.length === 0 ||
+          typeof semanticKind !== 'string' ||
+          semanticKind.length === 0 ||
+          typeof targetName !== 'string' ||
+          targetName.length === 0
+        ) {
+          return { ok: false as const, error: 'Invalid import arguments' };
+        }
+
+        // Hash + size via streaming read so big files don't balloon memory.
+        const bytes = await readFile(sourcePath);
+        const hash = createHash('sha256').update(bytes).digest('hex');
+        const size = bytes.byteLength;
+
+        const kindDir = path.join(workspacePath, ASSETS_DIRNAME, semanticKind);
+        await mkdir(kindDir, { recursive: true });
+        const targetPath = path.join(kindDir, targetName);
+
+        // Refuse to overwrite — caller should mint a unique name.
+        try {
+          await stat(targetPath);
+          return { ok: false as const, error: `Target file already exists: ${targetName}` };
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+        }
+
+        await writeFile(targetPath, bytes);
+
+        // id is the workspace-relative path (without leading slash),
+        // matching the renderer's id-as-path convention.
+        const relPath = path.posix.join(semanticKind, targetName);
+        return {
+          ok: true as const,
+          entry: {
+            id: relPath,
+            path: relPath,
+            hash,
+            size,
+          },
+        };
+      } catch (err) {
+        return { ok: false as const, error: errMsg(err) };
+      }
+    },
+  );
 
   ipcMain.handle('fs:readJson', async (_event, filePath: string) => {
     try {

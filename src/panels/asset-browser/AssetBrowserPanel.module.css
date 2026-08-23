@@ -1,19 +1,65 @@
 .browser {
-  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 12px;
+}
+
+.tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tabActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.group {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 4px;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 4px 12px;
-  font-size: 12px;
   cursor: pointer;
 }
 
@@ -21,26 +67,65 @@
   background: var(--color-bg-elevated);
 }
 
-.icon {
+.thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
   color: var(--color-text-muted);
-  width: 12px;
+  flex-shrink: 0;
 }
 
 .name {
   flex: 1;
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.count {
+.meta {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.empty {
+  padding: 16px 12px;
+  text-align: center;
   color: var(--color-text-muted);
   font-size: 11px;
 }
 
-.group {
-  padding: 6px 12px 2px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.footer {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.importButton {
+  width: 100%;
+  padding: 6px;
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.importButton:hover {
+  background: var(--color-bg-sunken);
+  border-color: var(--color-accent);
 }

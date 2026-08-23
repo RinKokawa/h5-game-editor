@@ -29,6 +29,13 @@
 export interface H5Bridge {
   readonly openDialog: () => Promise<string | null>;
   readonly saveAsDialog: (defaultName?: string) => Promise<string | null>;
+  /**
+   * Pick a single file with optional MIME filters (Step 30-A asset import).
+   * Returns the absolute path or `null` if the user cancelled.
+   */
+  readonly pickFile: (
+    filters?: ReadonlyArray<{ readonly name: string; readonly extensions: ReadonlyArray<string> }>,
+  ) => Promise<string | null>;
   readonly readJson: (
     filePath: string,
   ) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
@@ -36,6 +43,31 @@ export interface H5Bridge {
     filePath: string,
     text: string,
   ) => Promise<{ ok: true; bytes: number } | { ok: false; error: string }>;
+
+  /**
+   * Copy a file from `sourcePath` into the workspace at
+   * `<workspacePath>/assets/<semanticKind>/<targetName>` and return
+   * the resulting entry metadata (id / path / hash / size). The main
+   * process computes the hash so the renderer doesn't need to read
+   * the bytes twice.
+   */
+  readonly importAssetFile: (
+    workspacePath: string,
+    sourcePath: string,
+    semanticKind: string,
+    targetName: string,
+  ) => Promise<
+    | {
+        readonly ok: true;
+        readonly entry: {
+          readonly id: string;
+          readonly path: string;
+          readonly hash: string;
+          readonly size: number;
+        };
+      }
+    | { readonly ok: false; readonly error: string }
+  >;
 
   readonly pickFolder: () => Promise<string | null>;
   readonly createWorkspace: (
@@ -129,6 +161,43 @@ export const openDialog = async (): Promise<string | null> => {
 export const saveAsDialog = async (defaultName?: string): Promise<string | null> => {
   if (!window.h5) return null;
   return window.h5.saveAsDialog(defaultName);
+};
+
+/**
+ * Pick a single file. `filters` is a list of MIME-style entries; pass
+ * `undefined` for the OS default. Outside Electron, returns `null` —
+ * callers should guard.
+ */
+export const pickFile = async (
+  filters?: ReadonlyArray<{ readonly name: string; readonly extensions: ReadonlyArray<string> }>,
+): Promise<string | null> => {
+  if (!window.h5) return null;
+  return window.h5.pickFile(filters);
+};
+
+/**
+ * Copy a file into the workspace's `assets/<kind>/` directory and
+ * return the entry metadata (id is the workspace-relative path).
+ */
+export const importAssetFile = async (
+  workspacePath: string,
+  sourcePath: string,
+  semanticKind: string,
+  targetName: string,
+): Promise<
+  | {
+      readonly ok: true;
+      readonly entry: {
+        readonly id: string;
+        readonly path: string;
+        readonly hash: string;
+        readonly size: number;
+      };
+    }
+  | { readonly ok: false; readonly error: string }
+> => {
+  if (!window.h5) return { ok: false, error: 'Electron bridge not available' };
+  return window.h5.importAssetFile(workspacePath, sourcePath, semanticKind, targetName);
 };
 
 export const readJsonFile = async (

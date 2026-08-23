@@ -43,7 +43,11 @@ const defineTileset = (input: BuiltinTilesetInput): Tileset => {
   return {
     id: asTilesetId(input.id),
     name: input.name,
-    image: { kind: 'image', path: input.imageUrl } satisfies AssetRef,
+    image: {
+      kind: 'image',
+      semanticKind: 'tileset',
+      path: input.imageUrl,
+    } satisfies AssetRef,
     tileWidth: SPROUT_LAYOUT.tileWidth,
     tileHeight: SPROUT_LAYOUT.tileHeight,
     spacing: SPROUT_LAYOUT.spacing,

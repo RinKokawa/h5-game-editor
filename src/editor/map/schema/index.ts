@@ -30,7 +30,13 @@ export type { Point, WorldPoint, ScreenPoint, TileCoord, Size, Rect, Color } fro
 
 export type { PropertyValue, PropertyBag } from './property';
 
-export type { AssetKind, AssetRef } from './asset';
+export type { AssetKind, SemanticKind, AssetId, AssetRef } from './asset';
+export {
+  asAssetId,
+  semanticToPhysical,
+  extensionToSemantic,
+  isBuiltinAssetId,
+} from './asset';
 
 export type { PlacedTile, TileRotation, TileLayerData } from './tile';
 export { encodeTileCoord, decodeTileCoord } from './tile';

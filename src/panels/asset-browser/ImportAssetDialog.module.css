@@ -1,0 +1,147 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  width: 480px;
+  max-width: 90vw;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.notice {
+  padding: 8px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.notice code {
+  background: var(--color-bg-sunken);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.select,
+.input {
+  padding: 6px 8px;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.chooseButton {
+  padding: 6px 12px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.chooseButton:hover {
+  border-color: var(--color-accent);
+}
+
+.chooseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sourcePath {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.error {
+  padding: 8px;
+  background: var(--color-bg-sunken);
+  border-left: 2px solid #e74c3c;
+  border-radius: 2px;
+  font-size: 11px;
+  color: #e74c3c;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cancel,
+.confirm {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cancel {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.confirm {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+
+.cancel:hover:not(:disabled),
+.confirm:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.cancel:disabled,
+.confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

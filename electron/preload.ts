@@ -40,6 +40,13 @@ export interface H5Bridge {
   // Document I/O (pre-Step 18)
   readonly openDialog: () => Promise<string | null>;
   readonly saveAsDialog: (defaultName?: string) => Promise<string | null>;
+  /**
+   * Pick a single file (Step 30-A asset import). Optional MIME
+   * filters restrict the picker; pass `undefined` for the OS default.
+   */
+  readonly pickFile: (
+    filters?: ReadonlyArray<{ readonly name: string; readonly extensions: ReadonlyArray<string> }>,
+  ) => Promise<string | null>;
   readonly readJson: (
     filePath: string,
   ) => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
@@ -47,6 +54,30 @@ export interface H5Bridge {
     filePath: string,
     text: string,
   ) => Promise<{ ok: true; bytes: number } | { ok: false; error: string }>;
+
+  /**
+   * Copy a file into `<workspace>/assets/<semanticKind>/<targetName>`,
+   * compute its content hash, and return the entry metadata. The
+   * renderer never reads the bytes itself — that stays in the main
+   * process where Node `fs` is available.
+   */
+  readonly importAssetFile: (
+    workspacePath: string,
+    sourcePath: string,
+    semanticKind: string,
+    targetName: string,
+  ) => Promise<
+    | {
+        readonly ok: true;
+        readonly entry: {
+          readonly id: string;
+          readonly path: string;
+          readonly hash: string;
+          readonly size: number;
+        };
+      }
+    | { readonly ok: false; readonly error: string }
+  >;
 
   // Workspace I/O (Step 18)
   readonly pickFolder: () => Promise<string | null>;
@@ -128,6 +159,9 @@ const api: H5Bridge = {
   openDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:open'),
   saveAsDialog: (defaultName?: string): Promise<string | null> =>
     ipcRenderer.invoke('dialog:saveAs', defaultName),
+  pickFile: (
+    filters?: ReadonlyArray<{ readonly name: string; readonly extensions: ReadonlyArray<string> }>,
+  ): Promise<string | null> => ipcRenderer.invoke('dialog:pickFile', filters),
   readJson: (
     filePath: string,
   ): Promise<{ ok: true; text: string } | { ok: false; error: string }> =>
@@ -137,6 +171,23 @@ const api: H5Bridge = {
     text: string,
   ): Promise<{ ok: true; bytes: number } | { ok: false; error: string }> =>
     ipcRenderer.invoke('fs:writeJson', filePath, text),
+  importAssetFile: (
+    workspacePath: string,
+    sourcePath: string,
+    semanticKind: string,
+    targetName: string,
+  ): Promise<
+    | {
+        readonly ok: true;
+        readonly entry: {
+          readonly id: string;
+          readonly path: string;
+          readonly hash: string;
+          readonly size: number;
+        };
+      }
+    | { readonly ok: false; readonly error: string }
+  > => ipcRenderer.invoke('asset:importFile', workspacePath, sourcePath, semanticKind, targetName),
 
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
   createWorkspace: (folderPath: string, name: string) =>
