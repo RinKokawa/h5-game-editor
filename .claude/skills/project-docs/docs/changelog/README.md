@@ -19,3 +19,4 @@ v0.1 closed loop + 5-year skeleton 阶段。详细叙述只在 `README.md` 的 R
 
 - **Step 29 — SelectionStrategy 注册表 (A5)** — 推迟到第 4 种选区 kind 落地才做。
 - **Step 31 candidates** — terrain edges 的 autotile/bitmap 期望、brush 的 flip/rotation UI、workspace asset import。
+- **Detachable Panels** — Unity / Cocos / Photoshop 风格单窗口浮窗面板。Phase 1（MVP：detach/drag/persist）+ Phase 2（snap-to-edge/minimized/workspace presets），**不含** Phase 3 Tab 模式（一个 dock 多 panel tab）。用户多次提"面板堆左边"，当前**暂不实现**，留作未来 step。详见 `memory/project_detachable_panels_plan.md`。

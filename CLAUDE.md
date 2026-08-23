@@ -11,7 +11,7 @@
 ## 1. 项目定位
 
 长期演进的 H5 游戏**编辑器框架**。产品**不是**"一个地图编辑器"，
-而是承载多种编辑器（Map / Dialogue / Animation / Quest / Inventory /
+而是承载多种编辑器（Map / Dialogue / UI / Animation / Quest / Inventory /
 Skill / Cutscene / Node / Localization / Timeline / Particle）的框架。
 每个改动都要扛得住再加 10 个编辑器。
 
@@ -34,7 +34,8 @@ Skill / Cutscene / Node / Localization / Timeline / Particle）的框架。
 2. **所有变更走 Command。** 工具 / 面板 / 快捷键构造 Command 通过
    CommandBus 派发。无后门 `document.layers[0].tiles[x] = …`。
 3. **React 不画 Tile。** PixiJS 场景图是 Tile / 实体 / 网格 / 选区矩形的
-   唯一住处。
+   唯一住处。**UI 编辑器激活时**，DOM 可渲染 widget（不画 Tile、不持有
+   Pixi 引用；与 Map 视图互斥）。
 4. **Pixi 对象引用不得进 React state 或 Zustand store。** 通信单向：
    store → props（数字、id、标志）→ Pixi 场景图。
 5. **工具只产出 Command。** 工具绝不直接改 Document。这样工具可重放，

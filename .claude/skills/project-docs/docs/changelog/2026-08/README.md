@@ -15,3 +15,5 @@
 | Dialogs — About | [dialogs.md](./dialogs.md) |
 | StatusBar — dirty 指示 | [statusbar.md](./statusbar.md) |
 | Documentation — README / USER_GUIDE | [documentation.md](./documentation.md) |
+| Asset — Step 30-A 基础设施 | [asset.md](./asset.md) |
+| Detachable Panels — Step 30-B Phase 1 | [detachable-panels.md](./detachable-panels.md) |
